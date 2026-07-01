@@ -132,10 +132,6 @@ export default function Header({ user }) {
       </div>
 
       <div className={`mobile-nav-drawer ${isMobileOpen ? 'active' : ''}`}>
-        <div style={{ position: 'relative', marginBottom: '0.5rem' }}>
-          <i className="fa-solid fa-magnifying-glass" style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: '0.85rem' }}></i>
-          <input type="text" className="header-search-input" placeholder="Search projects..." value={searchValue} onChange={(e) => setSearchValue(e.target.value)} onKeyDown={handleSearchKeyPress} style={{ width: '100%', borderRadius: '10px', paddingLeft: '2.2rem', border: '1px solid var(--border-light)', padding: '0.6rem 0.8rem 0.6rem 2.2rem' }} />
-        </div>
         {navItems.map((item) => (
           <NavLink key={item.to} to={item.to} className={({ isActive }) => `mobile-nav-link ${isActive ? 'active' : ''}`} onClick={() => setIsMobileOpen(false)}>
             <i className={`fa-solid ${item.icon}`}></i> <span>{item.label}</span>
