@@ -39,7 +39,6 @@ function EventCountdown({ targetStr }) {
 export default function Events({ user }) {
   const navigate = useNavigate();
   const [allEvents, setAllEvents] = useState([]);
-  const [filter, setFilter] = useState('upcoming');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -52,9 +51,7 @@ export default function Events({ user }) {
   }, []);
 
   const today = new Date().toISOString().split('T')[0];
-  const upcoming = allEvents.filter(e => e.date >= today).sort((a, b) => new Date(a.date) - new Date(b.date));
-  const past = allEvents.filter(e => e.date < today).sort((a, b) => new Date(b.date) - new Date(a.date));
-  const displayEvents = filter === 'upcoming' ? upcoming : past;
+  const displayEvents = [...allEvents].sort((a, b) => new Date(b.date) - new Date(a.date));
 
   const handleRegister = async (eventId) => {
     if (!user) return navigate('/auth?redirect=/events');
@@ -81,54 +78,53 @@ export default function Events({ user }) {
         <p className="page-subtitle">Stay updated with our workshops, seminars, coding sprints, and challenges throughout the year.</p>
       </div>
 
-      <div className="filter-bar">
-        <div className="filter-buttons">
-          <button className={`btn btn-sm ${filter === 'upcoming' ? 'btn-primary' : 'btn-outline'}`} onClick={() => setFilter('upcoming')} style={{ borderRadius: 'var(--radius-sm)' }}>Upcoming</button>
-          <button className={`btn btn-sm ${filter === 'past' ? 'btn-primary' : 'btn-outline'}`} onClick={() => setFilter('past')} style={{ borderRadius: 'var(--radius-sm)' }}>Past Events</button>
-        </div>
+      <div className="filter-bar" style={{ justifyContent: 'flex-end', marginBottom: '2rem' }}>
         <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)', fontWeight: 600 }}>{displayEvents.length} event{displayEvents.length !== 1 ? 's' : ''}</span>
       </div>
 
       {loading ? <div className="loading-spinner" /> : (
         <div className="grid-auto">
-          {displayEvents.map((evt, i) => (
-            <Reveal key={evt.id} direction="up" delay={`${i * 0.06}s`}>
-              <TiltCard tiltDegree={6} scale={1.02}>
-                <div style={{
-                  background: 'var(--card)', border: '1px solid var(--border-light)',
-                  borderRadius: 'var(--radius-lg)', overflow: 'hidden',
-                  boxShadow: 'var(--shadow-sm)', height: '100%', display: 'flex', flexDirection: 'column',
-                }}>
-                  {evt.poster && <img src={evt.poster} alt={evt.title} style={{ width: '100%', height: 260, objectFit: 'contain', background: 'var(--surface)', borderBottom: '1px solid var(--border-light)' }} />}
-                  <div style={{ padding: '1.25rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
-                    <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text)', marginBottom: '0.4rem' }}>{evt.title}</h3>
-                    <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '1rem', flex: 1 }}>{evt.description?.substring(0, 120)}...</p>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>
-                      <span>📍 {evt.venue}</span>
-                      <span>🕐 {evt.date}</span>
+          {displayEvents.map((evt, i) => {
+            const isUpcoming = evt.date >= today;
+            return (
+              <Reveal key={evt.id} direction="up" delay={`${i * 0.06}s`}>
+                <TiltCard tiltDegree={6} scale={1.02}>
+                  <div style={{
+                    background: 'var(--card)', border: '1px solid var(--border-light)',
+                    borderRadius: 'var(--radius-lg)', overflow: 'hidden',
+                    boxShadow: 'var(--shadow-sm)', height: '100%', display: 'flex', flexDirection: 'column',
+                  }}>
+                    {evt.poster && <img src={evt.poster} alt={evt.title} style={{ width: '100%', height: 260, objectFit: 'contain', background: 'var(--surface)', borderBottom: '1px solid var(--border-light)' }} />}
+                    <div style={{ padding: '1.25rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                      <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text)', marginBottom: '0.4rem' }}>{evt.title}</h3>
+                      <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '1rem', flex: 1 }}>{evt.description}</p>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>
+                        <span>📍 {evt.venue}</span>
+                        <span>🕐 {evt.date}</span>
+                      </div>
+                      {isUpcoming ? (
+                        <>
+                          <EventCountdown targetStr={`${evt.date}T${evt.time || '00:00'}`} />
+                          <button className="btn btn-primary btn-sm" onClick={() => handleRegister(evt.id)} style={{ marginTop: '0.75rem', justifyContent: 'center', width: '100%', borderRadius: 'var(--radius-sm)' }}>
+                            {evt.registeredUsers?.includes(user?.id) ? '✅ Registered' : 'Register Now'}
+                          </button>
+                        </>
+                      ) : (
+                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontStyle: 'italic', marginTop: '0.5rem' }}>Past event</span>
+                      )}
                     </div>
-                    {filter === 'upcoming' ? (
-                      <>
-                        <EventCountdown targetStr={`${evt.date}T${evt.time || '00:00'}`} />
-                        <button className="btn btn-primary btn-sm" onClick={() => handleRegister(evt.id)} style={{ marginTop: '0.75rem', justifyContent: 'center', width: '100%', borderRadius: 'var(--radius-sm)' }}>
-                          {evt.registeredUsers?.includes(user?.id) ? '✅ Registered' : 'Register Now'}
-                        </button>
-                      </>
-                    ) : (
-                      <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>Past event</span>
-                    )}
                   </div>
-                </div>
-              </TiltCard>
-            </Reveal>
-          ))}
+                </TiltCard>
+              </Reveal>
+            );
+          })}
         </div>
       )}
 
       {!loading && displayEvents.length === 0 && (
         <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
           <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>📅</div>
-          <p>{filter === 'upcoming' ? 'No upcoming events scheduled.' : 'No past events recorded.'}</p>
+          <p>No events scheduled.</p>
         </div>
       )}
     </div>
