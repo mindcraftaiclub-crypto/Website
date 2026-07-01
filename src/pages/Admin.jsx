@@ -117,6 +117,7 @@ function CoreBoardTab({ allMembers }) {
   const [uploading, setUploading] = useState(false);
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState('');
+  const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState({ name: '', email: '', role: '', year: '', linkedin: '', instagram: '', github: '', portfolio: '', description: '' });
   const fileRef = useRef();
 
@@ -137,30 +138,64 @@ function CoreBoardTab({ allMembers }) {
 
   const isLinkedMember = email => allMembers.some(m => m.email?.toLowerCase() === email?.toLowerCase());
 
+  const handleStartEdit = m => {
+    setEditingId(m.id);
+    setForm({
+      name: m.name || '',
+      email: m.email || '',
+      role: m.role || '',
+      year: m.year || '',
+      linkedin: m.linkedin || '',
+      instagram: m.instagram || '',
+      github: m.github || '',
+      portfolio: m.portfolio || '',
+      description: m.description || ''
+    });
+    setImagePreview(m.photo || '');
+    setImageFile(null);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setForm({ name: '', email: '', role: '', year: '', linkedin: '', instagram: '', github: '', portfolio: '', description: '' });
+    setImagePreview('');
+    setImageFile(null);
+    if (fileRef.current) fileRef.current.value = '';
+  };
+
   const handleAdd = async () => {
     if (!form.name || !form.email || !form.role) {
       window.showToast('Missing Fields', 'Name, Email and Role are required.', 'error'); return;
     }
-    if (!imageFile) {
-      window.showToast('No Photo', 'Please select a photo first.', 'error'); return;
-    }
     setUploading(true);
     try {
-      // Upload image to Supabase
-      const ext = imageFile.name.split('.').pop();
-      const path = `core/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
-      const { error: uploadError } = await supabaseServiceClient.storage.from('member_photos').upload(path, imageFile, { upsert: true });
-      if (uploadError) throw new Error(uploadError.message);
-      const { data: { publicUrl } } = supabaseServiceClient.storage.from('member_photos').getPublicUrl(path);
+      let photoUrl = imagePreview;
 
-      await db.insert('CoreMembers', { ...form, photo: publicUrl, createdAt: new Date().toISOString() });
-      window.showToast('Added!', `${form.name} added to the Core Board.`, 'success');
-      setForm({ name: '', email: '', role: '', year: '', linkedin: '', instagram: '', github: '', portfolio: '', description: '' });
-      setImageFile(null); setImagePreview('');
-      if (fileRef.current) fileRef.current.value = '';
+      if (imageFile) {
+        // Upload image to Supabase
+        const ext = imageFile.name.split('.').pop();
+        const path = `core/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+        const { error: uploadError } = await supabaseServiceClient.storage.from('member_photos').upload(path, imageFile, { upsert: true });
+        if (uploadError) throw new Error(uploadError.message);
+        const { data: { publicUrl } } = supabaseServiceClient.storage.from('member_photos').getPublicUrl(path);
+        photoUrl = publicUrl;
+      } else if (!photoUrl && !editingId) {
+        window.showToast('No Photo', 'Please select a photo first.', 'error');
+        setUploading(false);
+        return;
+      }
+
+      if (editingId) {
+        await db.update('CoreMembers', editingId, { ...form, photo: photoUrl });
+        window.showToast('Updated!', `${form.name} updated successfully.`, 'success');
+      } else {
+        await db.insert('CoreMembers', { ...form, photo: photoUrl, createdAt: new Date().toISOString() });
+        window.showToast('Added!', `${form.name} added to the Core Board.`, 'success');
+      }
+      handleCancelEdit();
       load();
     } catch (err) {
-      window.showToast('Upload Failed', err.message, 'error');
+      window.showToast('Operation Failed', err.message, 'error');
     } finally {
       setUploading(false);
     }
@@ -183,8 +218,8 @@ function CoreBoardTab({ allMembers }) {
       <div>
         <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14, padding: '1.5rem' }}>
           <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1.25rem', color: 'var(--text)' }}>
-            <i className="fa-solid fa-user-plus" style={{ color: 'var(--orange)', marginRight: '0.5rem' }} />
-            Add Core Member
+            <i className={editingId ? "fa-solid fa-user-pen" : "fa-solid fa-user-plus"} style={{ color: 'var(--orange)', marginRight: '0.5rem' }} />
+            {editingId ? 'Edit Core Member' : 'Add Core Member'}
           </h3>
 
           {/* Photo Upload */}
@@ -226,9 +261,16 @@ function CoreBoardTab({ allMembers }) {
             </div>
           )}
 
-          <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', marginTop: '0.25rem' }} onClick={handleAdd} disabled={uploading}>
-            {uploading ? <><i className="fa-solid fa-spinner fa-spin" /> Uploading…</> : <><i className="fa-solid fa-plus" /> Add to Core Board</>}
-          </button>
+          <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+            <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }} onClick={handleAdd} disabled={uploading}>
+              {uploading ? <><i className="fa-solid fa-spinner fa-spin" /> Saving…</> : <><i className="fa-solid fa-check" /> {editingId ? 'Save Changes' : 'Add Member'}</>}
+            </button>
+            {editingId && (
+              <button className="btn btn-secondary" style={{ padding: '0.72rem 1.2rem' }} onClick={handleCancelEdit}>
+                Cancel
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -265,12 +307,22 @@ function CoreBoardTab({ allMembers }) {
                       {m.portfolio && <a href={m.portfolio} target="_blank" rel="noreferrer" style={{ color: 'var(--orange)', fontSize: '0.85rem' }}><i className="fa-solid fa-globe" /></a>}
                     </div>
                   </div>
-                  <button onClick={() => handleDelete(m.id, m.name)} style={{ background: '#fee2e2', border: 'none', borderRadius: 8, width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#dc2626', fontSize: '0.82rem', transition: 'background 0.2s', flexShrink: 0 }}
-                    onMouseEnter={e => e.currentTarget.style.background = '#fecaca'}
-                    onMouseLeave={e => e.currentTarget.style.background = '#fee2e2'}
-                  >
-                    <i className="fa-solid fa-trash" />
-                  </button>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexShrink: 0 }}>
+                    <button onClick={() => handleStartEdit(m)} style={{ background: 'var(--surface)', border: 'none', borderRadius: 8, width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-secondary)', fontSize: '0.82rem', transition: 'background 0.2s' }}
+                      onMouseEnter={e => e.currentTarget.style.background = 'var(--surface-2)'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'var(--surface)'}
+                      title="Edit Member"
+                    >
+                      <i className="fa-solid fa-pen" />
+                    </button>
+                    <button onClick={() => handleDelete(m.id, m.name)} style={{ background: '#fee2e2', border: 'none', borderRadius: 8, width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#dc2626', fontSize: '0.82rem', transition: 'background 0.2s' }}
+                      onMouseEnter={e => e.currentTarget.style.background = '#fecaca'}
+                      onMouseLeave={e => e.currentTarget.style.background = '#fee2e2'}
+                      title="Delete Member"
+                    >
+                      <i className="fa-solid fa-trash" />
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
