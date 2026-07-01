@@ -37,7 +37,11 @@ const firestore = getFirestore(app);
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseServiceKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabaseServiceClient = supabaseServiceKey 
+  ? createClient(supabaseUrl, supabaseServiceKey)
+  : supabase;
 
 const initialCollections = {
   Users: [],
@@ -267,12 +271,12 @@ class FirebaseDatabase {
       const snapshot = await getDocs(colRef);
       const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
       const deletedIds = getDeletedIds();
-      return data.filter(item => !deletedIds.includes(item.id));
+      return data.filter(item => !deletedIds.includes(item.id) && item.isDeleted !== true);
     } catch (error) {
       console.warn(`find(${collectionName}) failed, using fallback:`, error.message);
       const localData = getLocalStorageCollection(collectionName);
       const deletedIds = getDeletedIds();
-      return localData.filter(item => !deletedIds.includes(item.id));
+      return localData.filter(item => !deletedIds.includes(item.id) && item.isDeleted !== true);
     }
   }
 
@@ -283,7 +287,11 @@ class FirebaseDatabase {
         if (deletedIds.includes(queryObj.id)) return null;
         const docRef = doc(firestore, collectionName, queryObj.id);
         const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) return { id: docSnap.id, ...docSnap.data() };
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          if (data.isDeleted === true) return null;
+          return { id: docSnap.id, ...data };
+        }
         return null;
       }
       const items = await this.find(collectionName);
@@ -292,7 +300,7 @@ class FirebaseDatabase {
       console.warn(`findOne(${collectionName}) failed, using fallback:`, error.message);
       const items = getLocalStorageCollection(collectionName);
       const deletedIds = getDeletedIds();
-      return items.filter(i => !deletedIds.includes(i.id)).find(item => Object.keys(queryObj).every(key => item[key] === queryObj[key])) || null;
+      return items.filter(i => !deletedIds.includes(i.id) && i.isDeleted !== true).find(item => Object.keys(queryObj).every(key => item[key] === queryObj[key])) || null;
     }
   }
 
@@ -349,6 +357,12 @@ class FirebaseDatabase {
     const items = getLocalStorageCollection(collectionName);
     setLocalStorageCollection(collectionName, items.filter(item => item.id !== id));
     try {
+      try {
+        const docRef = doc(firestore, collectionName, id);
+        await updateDoc(docRef, { isDeleted: true, updatedAt: new Date().toISOString() });
+      } catch (softErr) {
+        console.warn("Soft delete Firestore update failed:", softErr.message);
+      }
       await deleteDoc(doc(firestore, collectionName, id));
     } catch (error) {
       console.warn(`Firestore delete failed for ${id} in ${collectionName} (handled via client-side blacklist):`, error.message);
@@ -368,7 +382,7 @@ class FirebaseDatabase {
     const filePath = fullPath.substring(slashIdx + 1);
     if (!bucket || !filePath) return;
     try {
-      const { error } = await supabase.storage.from(bucket).remove([filePath]);
+      const { error } = await supabaseServiceClient.storage.from(bucket).remove([filePath]);
       if (error) console.warn('deleteFile error:', error.message);
     } catch (e) {
       console.warn('deleteFile exception:', e.message);
@@ -380,9 +394,9 @@ class FirebaseDatabase {
     try {
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
-      const { data, error } = await supabase.storage.from(bucket).upload(fileName, file, { cacheControl: '3600', upsert: false });
+      const { data, error } = await supabaseServiceClient.storage.from(bucket).upload(fileName, file, { cacheControl: '3600', upsert: false });
       if (error) throw error;
-      const { data: publicUrlData } = supabase.storage.from(bucket).getPublicUrl(fileName);
+      const { data: publicUrlData } = supabaseServiceClient.storage.from(bucket).getPublicUrl(fileName);
       return publicUrlData.publicUrl;
     } catch (error) {
       console.error('Upload error:', error);
