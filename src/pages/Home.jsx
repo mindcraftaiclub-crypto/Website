@@ -37,12 +37,12 @@ function CountUp({ to, suffix = '' }) {
 }
 
 const FEATURES = [
-  { icon: '🤖', title: 'Large Language Models', desc: 'Explore GPT, Gemini, LLaMA — fine-tuning, prompting, and RAG architectures.', backTitle: 'Core Topics', backItems: ['RAG Architectures', 'LoRA & QLoRA Fine-tuning', 'Vector DBs (Chroma, Pinecone)', 'LangChain & Agents'] },
-  { icon: '👁️', title: 'Computer Vision', desc: 'Object detection, image classification, segmentation with PyTorch & OpenCV.', backTitle: 'Core Topics', backItems: ['YOLOv8 Object Detection', 'U-Net Image Segmentation', 'PyTorch & Torchvision', 'Custom CNN Architectures'] },
-  { icon: '🔊', title: 'NLP & Speech AI', desc: 'Sentiment analysis, named entity recognition, and speech-to-text pipelines.', backTitle: 'Core Topics', backItems: ['Whisper Speech Recognition', 'Hugging Face Transformers', 'NER & POS Tagging', 'Seq2Seq Translation Models'] },
-  { icon: '📊', title: 'Data Science & ML', desc: 'Scikit-learn, pandas, feature engineering, and model evaluation techniques.', backTitle: 'Core Topics', backItems: ['EDA & Feature Engineering', 'Ensemble Models (XGBoost)', 'Dimensionality Reduction (PCA)', 'Cross-Validation & Grid Search'] },
-  { icon: '⚙️', title: 'MLOps & Deployment', desc: 'Docker, FastAPI, Hugging Face Spaces — ship your models to production.', backTitle: 'Core Topics', backItems: ['Docker Containerization', 'FastAPI Web Services', 'GitHub Actions CI/CD', 'Model Monitoring & Logging'] },
-  { icon: '🧪', title: 'AI Research Projects', desc: 'Work on real IEEE-publishable research with faculty mentors and seniors.', backTitle: 'Core Topics', backItems: ['Academic Paper Drafting', 'Literature Review Syncs', 'Experimental Design', 'LaTeX Typesetting'] },
+  { icon: '🤖', title: 'Large Language Models', desc: 'Explore GPT, Gemini, LLaMA — fine-tuning, prompting, and RAG architectures.', backTitle: 'Core Topics', backItems: ['RAG Architectures', 'LoRA & QLoRA Fine-tuning', 'Vector DBs (Chroma, Pinecone)', 'LangChain & Agents'], plannedEvents: 'LLM Fine-Tuning Bootcamp, RAG Systems & Vector DBs Seminar.' },
+  { icon: '👁️', title: 'Computer Vision', desc: 'Object detection, image classification, segmentation with PyTorch & OpenCV.', backTitle: 'Core Topics', backItems: ['YOLOv8 Object Detection', 'U-Net Image Segmentation', 'PyTorch & Torchvision', 'Custom CNN Architectures'], plannedEvents: 'YOLOv8 Object Tracking Hackathon, PyTorch CNN Training Bootcamp.' },
+  { icon: '🔊', title: 'NLP & Speech AI', desc: 'Sentiment analysis, named entity recognition, and speech-to-text pipelines.', backTitle: 'Core Topics', backItems: ['Whisper Speech Recognition', 'Hugging Face Transformers', 'NER & POS Tagging', 'Seq2Seq Translation Models'], plannedEvents: 'Hugging Face Models Workshop, Whisper Speech-to-Text Hackathon.' },
+  { icon: '📊', title: 'Data Science & ML', desc: 'Scikit-learn, pandas, feature engineering, and model evaluation techniques.', backTitle: 'Core Topics', backItems: ['EDA & Feature Engineering', 'Ensemble Models (XGBoost)', 'Dimensionality Reduction (PCA)', 'Cross-Validation & Grid Search'], plannedEvents: 'Feature Engineering Sprint, XGBoost & Ensemble Models Workshop.' },
+  { icon: '⚙️', title: 'MLOps & Deployment', desc: 'Docker, FastAPI, Hugging Face Spaces — ship your models to production.', backTitle: 'Core Topics', backItems: ['Docker Containerization', 'FastAPI Web Services', 'GitHub Actions CI/CD', 'Model Monitoring & Logging'], plannedEvents: 'Docker for AI Bootcamp, FastAPI & Cloud Deployments Seminar.' },
+  { icon: '🧪', title: 'AI Research Projects', desc: 'Work on real IEEE-publishable research with faculty mentors and seniors.', backTitle: 'Core Topics', backItems: ['Academic Paper Drafting', 'Literature Review Syncs', 'Experimental Design', 'LaTeX Typesetting'], plannedEvents: 'IEEE Research Paper Drafting Series, LaTeX Technical Writing Bootcamp.' },
 ];
 
 const MARQUEE_ITEMS = [
@@ -208,27 +208,17 @@ export default function Home() {
           </div>
         </div>
 
-        <div style={{
-          position: 'relative', zIndex: 1,
-          display: 'flex', flexDirection: 'column',
-          alignItems: 'center', width: '100%', textAlign: 'center',
-        }}>
-          <div ref={heroTextRef} style={{ maxWidth: 680, ...reveal(heroTextVis, 'up') }}>
+        <div className="flex-center" style={{ width: '100%', position: 'relative', zIndex: 1 }}>
+          <div ref={heroTextRef} style={{ textAlign: 'center', maxWidth: 800, padding: '0 1.5rem', ...reveal(heroTextVis, 'up') }}>
             <div style={{
               display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
-              background: 'rgba(var(--orange-rgb), 0.08)',
-              border: '1px solid rgba(var(--orange-rgb), 0.2)',
-              borderRadius: 50, padding: '0.4rem 1.1rem',
-              fontSize: '0.75rem', fontWeight: 700,
-              textTransform: 'uppercase', letterSpacing: '0.12em',
-              color: 'var(--orange)', marginBottom: '1.75rem',
+              background: 'var(--orange-glow)', border: '1px solid rgba(255,85,0,0.2)',
+              borderRadius: 50, padding: '0.4rem 1rem', marginBottom: '1.5rem',
             }}>
-              <span style={{
-                width: 7, height: 7, borderRadius: '50%',
-                background: 'var(--orange)', display: 'inline-block',
-                animation: 'ping-dot 1.2s ease-out infinite',
-              }} />
-              CSE · AI Club · Recruiting 2026–27
+              <span className="logo-dot"></span>
+              <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--orange)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                Join CSE's Premier AI Community
+              </span>
             </div>
 
              <h1 style={{
@@ -305,8 +295,8 @@ export default function Home() {
       }}>
         <div style={{ display: 'flex', gap: '3rem', animation: 'marquee-ltr 28s linear infinite', width: 'max-content' }}>
           {[...MARQUEE_ITEMS, ...MARQUEE_ITEMS].map((item, i) => (
-            <span key={i} style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.12em', whiteSpace: 'nowrap' }}>
-              {item} <span style={{ color: 'var(--orange)', marginLeft: '0.8rem' }}>✦</span>
+            <span key={i} style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              {item} <span style={{ color: 'var(--orange)', opacity: 0.5 }}>•</span>
             </span>
           ))}
         </div>
@@ -344,15 +334,25 @@ export default function Home() {
                     <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', lineHeight: 1.65 }}>{f.desc}</p>
                   </div>
                   {/* Back Side */}
-                  <div className="flip-card-back">
-                    <h4 style={{ fontSize: '0.95rem', fontWeight: 700, marginBottom: '0.8rem', color: 'var(--orange)' }}>
-                      {f.backTitle}
-                    </h4>
-                    <ul style={{ paddingLeft: '1.2rem', margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-                      {f.backItems.map((item, idx) => (
-                        <li key={idx} style={{ marginBottom: '0.35rem' }}>{item}</li>
-                      ))}
-                    </ul>
+                  <div className="flip-card-back" style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem', padding: '1.5rem', height: '100%', justifyContent: 'space-between' }}>
+                    <div>
+                      <h4 style={{ fontSize: '0.88rem', fontWeight: 700, marginBottom: '0.4rem', color: 'var(--orange)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                        {f.backTitle}
+                      </h4>
+                      <ul style={{ paddingLeft: '1.2rem', margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                        {f.backItems.map((item, idx) => (
+                          <li key={idx} style={{ marginBottom: '0.2rem' }}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div style={{ borderTop: '1px solid var(--border-light)', paddingTop: '0.65rem' }}>
+                      <h5 style={{ fontSize: '0.78rem', fontWeight: 700, marginBottom: '0.25rem', color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                        <i className="fa-solid fa-calendar-day" style={{ color: 'var(--orange)', fontSize: '0.72rem' }} /> Planned Workshops
+                      </h5>
+                      <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.4 }}>
+                        {f.plannedEvents}
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
