@@ -225,7 +225,7 @@ export default function Gallery() {
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.5rem', fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.5rem', fontWeight: 500 }}>
                 <span>📍 Venue: {selectedEvent.venue}</span>
                 <span>🕐 Date: {selectedEvent.date}</span>
-                <span>📸 Snapshots: {selectedEvent.snapshots?.length || 0} items</span>
+                <span>📸 Snapshots: {Math.min(selectedEvent.snapshots?.length || 0, 5)} items</span>
               </div>
               <p style={{ fontSize: '0.95rem', color: 'var(--text-secondary)', marginTop: '1rem', lineHeight: 1.65, maxWidth: '800px' }}>
                 {selectedEvent.description}
@@ -234,35 +234,40 @@ export default function Gallery() {
 
             {/* Grid of Snaps */}
             {selectedEvent.snapshots && selectedEvent.snapshots.length > 0 ? (
-              <motion.div 
-                className="fullscreen-grid"
-                initial="hidden"
-                animate="visible"
-                variants={{
-                  hidden: {},
-                  visible: { transition: { staggerChildren: 0.04 } }
-                }}
-              >
-                {selectedEvent.snapshots.map((url, idx) => (
+              (() => {
+                const displayedSnaps = selectedEvent.snapshots.slice(0, 5);
+                return (
                   <motion.div 
-                    key={idx}
-                    className="fullscreen-img-card"
+                    className="fullscreen-grid"
+                    initial="hidden"
+                    animate="visible"
                     variants={{
-                      hidden: { opacity: 0, y: 30, scale: 0.95 },
-                      visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] } }
+                      hidden: {},
+                      visible: { transition: { staggerChildren: 0.04 } }
                     }}
-                    onClick={() => setLightboxUrl(url)}
                   >
-                    <img 
-                      src={url} 
-                      alt="Event snapshot memory" 
-                      style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', transition: 'transform 0.4s ease' }} 
-                      onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'}
-                      onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
-                    />
+                    {displayedSnaps.map((url, idx) => (
+                      <motion.div 
+                        key={idx}
+                        className="fullscreen-img-card"
+                        variants={{
+                          hidden: { opacity: 0, y: 30, scale: 0.95 },
+                          visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] } }
+                        }}
+                        onClick={() => setLightboxUrl(url)}
+                      >
+                        <img 
+                          src={url} 
+                          alt="Event snapshot memory" 
+                          style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', transition: 'transform 0.4s ease' }} 
+                          onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'}
+                          onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+                        />
+                      </motion.div>
+                    ))}
                   </motion.div>
-                ))}
-              </motion.div>
+                );
+              })()
             ) : (
               <div style={{ textAlign: 'center', padding: '6rem 0', color: 'var(--text-muted)' }}>
                 <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>📸</div>
