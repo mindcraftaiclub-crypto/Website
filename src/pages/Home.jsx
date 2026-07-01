@@ -59,10 +59,10 @@ export default function Home() {
   const [announcements, setAnnouncements] = useState([]);
   const [upcomingEvent, setUpcomingEvent] = useState(null);
   const [stats, setStats] = useState([
-    { value: 120, suffix: '+', label: 'Members', icon: '👥' },
-    { value: 40, suffix: '+', label: 'Projects', icon: '🛠️' },
-    { value: 18, suffix: '', label: 'Events', icon: '📅' },
-    { value: 6, suffix: '', label: 'Awards', icon: '🏆' },
+    { value: 0, suffix: '+', label: 'Members', icon: '👥' },
+    { value: 0, suffix: '+', label: 'Projects', icon: '🛠️' },
+    { value: 0, suffix: '', label: 'Events', icon: '📅' },
+    { value: 0, suffix: '', label: 'Awards', icon: '🏆' },
   ]);
 
   const [heroTextRef, heroTextVis] = useScrollReveal(0.05);
@@ -131,7 +131,19 @@ export default function Home() {
         const today = new Date().toISOString().split('T')[0];
         const upcoming = evts.filter(e => e.date >= today).sort((a, b) => new Date(a.date) - new Date(b.date));
         if (upcoming.length > 0) setUpcomingEvent(upcoming[0]);
-      } catch { /* ignore */ }
+
+        // Fetch counts for home page stats
+        const users = await db.find('Users');
+        const settings = await db.getSettings();
+        setStats([
+          { value: users.length || 120, suffix: '+', label: 'Members', icon: '👥' },
+          { value: parseInt(settings.projectsCount) || 40, suffix: '+', label: 'Projects', icon: '🛠️' },
+          { value: parseInt(settings.eventsCount) || 18, suffix: '', label: 'Events', icon: '📅' },
+          { value: parseInt(settings.awardsCount) || 6, suffix: '', label: 'Awards', icon: '🏆' },
+        ]);
+      } catch (e) {
+        console.error("Home stats load failed:", e);
+      }
     })();
   }, []);
 

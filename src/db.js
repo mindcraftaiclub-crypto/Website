@@ -118,7 +118,10 @@ const initialCollections = {
     academicYear: '2026-2027',
     registrationStatus: 'Open',
     adminEmail: 'admin@club.com',
-    announcementBanner: 'Welcome to Mindcraft AI. Check upcoming events for registrations.'
+    announcementBanner: 'Welcome to Mindcraft AI. Check upcoming events for registrations.',
+    projectsCount: 40,
+    eventsCount: 18,
+    awardsCount: 6
   }
 };
 
@@ -542,6 +545,41 @@ class FirebaseDatabase {
 
   async forgotPassword(email) {
     await sendPasswordResetEmail(auth, email);
+  }
+
+  async getSettings() {
+    try {
+      const docRef = doc(firestore, 'Settings', 'global_settings');
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        return docSnap.data();
+      }
+      return initialCollections.Settings;
+    } catch (e) {
+      console.warn("getSettings failed, using local fallback:", e.message);
+      try {
+        const local = localStorage.getItem('mindcraft_settings');
+        if (local) return JSON.parse(local);
+      } catch {}
+      return initialCollections.Settings;
+    }
+  }
+
+  async updateSettings(updates) {
+    try {
+      const docRef = doc(firestore, 'Settings', 'global_settings');
+      await setDoc(docRef, updates, { merge: true });
+      try {
+        localStorage.setItem('mindcraft_settings', JSON.stringify(updates));
+      } catch {}
+      return updates;
+    } catch (e) {
+      console.warn("updateSettings failed, using local fallback:", e.message);
+      try {
+        localStorage.setItem('mindcraft_settings', JSON.stringify(updates));
+      } catch {}
+      return updates;
+    }
   }
 }
 

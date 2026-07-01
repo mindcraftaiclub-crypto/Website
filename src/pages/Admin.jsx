@@ -6,6 +6,7 @@ const TABS = [
   { id: 'core',         label: 'Core Board',    icon: 'fa-star' },
   { id: 'events',       label: 'Events',        icon: 'fa-calendar' },
   { id: 'announcements',label: 'Announcements', icon: 'fa-bullhorn' },
+  { id: 'stats',        label: 'Stats Config',  icon: 'fa-chart-simple' },
 ];
 
 /* ── helpers ── */
@@ -490,6 +491,82 @@ function AnnouncementsTab() {
   );
 }
 
+/* ═══════════════════════════════════ STATS CONFIG TAB ═══════════════════════════════════ */
+function StatsTab() {
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({ projectsCount: '40+', eventsCount: '18', awardsCount: '6' });
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const s = await db.getSettings();
+        setForm({
+          projectsCount: s.projectsCount ?? '40+',
+          eventsCount: s.eventsCount ?? '18',
+          awardsCount: s.awardsCount ?? '6'
+        });
+      } catch (err) {
+        window.showToast('Error', 'Could not load settings.', 'error');
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await db.updateSettings(form);
+      window.showToast('Stats Saved', 'Homepage statistics updated successfully.', 'success');
+    } catch (err) {
+      window.showToast('Save Failed', err.message, 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) return <div className="loading-spinner" />;
+
+  return (
+    <div style={{ maxWidth: '520px', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14, padding: '1.75rem' }}>
+      <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '1.5rem', color: 'var(--text)' }}>
+        <i className="fa-solid fa-chart-simple" style={{ color: 'var(--orange)', marginRight: '0.5rem' }} />
+        Homepage Stat Config
+      </h3>
+
+      <div style={{ marginBottom: '1.25rem' }}>
+        <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.45rem' }}>
+          👥 Members Count (Calculated Automatically)
+        </label>
+        <input disabled value="Auto-Calculated from database size" style={{ width: '100%', padding: '0.65rem 0.9rem', border: '1px solid var(--border)', borderRadius: 8, fontSize: '0.88rem', color: 'var(--text-muted)', background: 'var(--surface)' }} />
+      </div>
+
+      {[
+        { key: 'projectsCount', label: '🛠️ Projects Count', placeholder: 'e.g. 40+' },
+        { key: 'eventsCount',   label: '📅 Events Count',   placeholder: 'e.g. 18' },
+        { key: 'awardsCount',   label: '🏆 Awards Count',   placeholder: 'e.g. 6' }
+      ].map(field => (
+        <div key={field.key} style={{ marginBottom: '1.25rem' }}>
+          <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.45rem' }}>
+            {field.label}
+          </label>
+          <input
+            value={form[field.key]}
+            onChange={e => setForm(p => ({ ...p, [field.key]: e.target.value }))}
+            placeholder={field.placeholder}
+            style={{ width: '100%', padding: '0.65rem 0.9rem', border: '1px solid var(--border)', borderRadius: 8, fontSize: '0.88rem', color: 'var(--text)', background: 'var(--surface)' }}
+          />
+        </div>
+      ))}
+
+      <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', marginTop: '0.5rem' }} onClick={handleSave} disabled={saving}>
+        {saving ? <><i className="fa-solid fa-spinner fa-spin" /> Saving…</> : <><i className="fa-solid fa-floppy-disk" /> Save Stats</>}
+      </button>
+    </div>
+  );
+}
+
 /* ═══════════════════════════════════ MAIN ADMIN PAGE ═══════════════════════════════════ */
 export default function Admin({ user }) {
   const [tab, setTab] = useState('members');
@@ -569,6 +646,7 @@ export default function Admin({ user }) {
       {tab === 'core'          && <CoreBoardTab allMembers={members} />}
       {tab === 'events'        && <EventsTab />}
       {tab === 'announcements' && <AnnouncementsTab />}
+      {tab === 'stats'         && <StatsTab />}
     </div>
   );
 }
