@@ -42,13 +42,24 @@ function MembersTab() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
 
-  useEffect(() => {
-    (async () => {
-      try { setMembers(await db.find('Users')); }
-      catch { window.showToast('Error', 'Could not load members.', 'error'); }
-      finally { setLoading(false); }
-    })();
-  }, []);
+  const load = async () => {
+    try { setMembers(await db.find('Users')); }
+    catch { window.showToast('Error', 'Could not load members.', 'error'); }
+    finally { setLoading(false); }
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const handleDeleteMember = async (id, name) => {
+    if (!window.confirm(`Are you sure you want to delete member "${name}"?`)) return;
+    try {
+      await db.delete('Users', id);
+      window.showToast('Member Deleted', 'The member record has been removed.', 'success');
+      load();
+    } catch (err) {
+      window.showToast('Error', err.message, 'error');
+    }
+  };
 
   const filtered = members.filter(m =>
     (m.name || '').toLowerCase().includes(search.toLowerCase()) ||
@@ -82,12 +93,12 @@ function MembersTab() {
             <table>
               <thead>
                 <tr>
-                  <th>Name</th><th>Email</th><th>Role</th><th>Year</th><th>Department</th><th>Joined</th>
+                  <th>Name</th><th>Email</th><th>Role</th><th>Year</th><th>Department</th><th>Joined</th><th style={{ textAlign: 'center' }}>Action</th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.length === 0 ? (
-                  <tr><td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>No members found</td></tr>
+                  <tr><td colSpan={7} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>No members found</td></tr>
                 ) : filtered.map(m => (
                   <tr key={m.id}>
                     <td>
@@ -101,6 +112,11 @@ function MembersTab() {
                     <td>{m.year || '—'}</td>
                     <td>{m.department || '—'}</td>
                     <td style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{m.createdAt ? new Date(m.createdAt).toLocaleDateString() : '—'}</td>
+                    <td style={{ textAlign: 'center' }}>
+                      <button onClick={() => handleDeleteMember(m.id, m.name)} style={{ background: '#fee2e2', border: 'none', borderRadius: 6, padding: '4px 8px', color: '#dc2626', fontSize: '0.74rem', fontWeight: 600, cursor: 'pointer' }}>
+                        Delete
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>

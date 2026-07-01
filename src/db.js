@@ -283,17 +283,37 @@ class FirebaseDatabase {
   }
 
   async find(collectionName) {
+    const deduplicateUsers = (list) => {
+      if (collectionName !== 'Users') return list;
+      const unique = {};
+      list.forEach(u => {
+        const email = (u.email || '').toLowerCase().trim();
+        if (!email) {
+          unique[u.id] = u;
+        } else {
+          const existing = unique[email];
+          // Keep admin role, or keep whichever has the longer/valid UID structure
+          if (!existing || u.role === 'admin' || (existing.role !== 'admin' && u.id.length > existing.id.length)) {
+            unique[email] = u;
+          }
+        }
+      });
+      return Object.values(unique);
+    };
+
     try {
       const colRef = collection(firestore, collectionName);
       const snapshot = await getDocs(colRef);
       const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
       const deletedIds = getDeletedIds();
-      return data.filter(item => !deletedIds.includes(item.id) && item.isDeleted !== true);
+      const filtered = data.filter(item => !deletedIds.includes(item.id) && item.isDeleted !== true);
+      return deduplicateUsers(filtered);
     } catch (error) {
       console.warn(`find(${collectionName}) failed, using fallback:`, error.message);
       const localData = getLocalStorageCollection(collectionName);
       const deletedIds = getDeletedIds();
-      return localData.filter(item => !deletedIds.includes(item.id) && item.isDeleted !== true);
+      const filtered = localData.filter(item => !deletedIds.includes(item.id) && item.isDeleted !== true);
+      return deduplicateUsers(filtered);
     }
   }
 
