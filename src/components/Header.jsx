@@ -9,7 +9,6 @@ export default function Header({ user }) {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isMoreOpen, setIsMoreOpen] = useState(false);
   const [searchValue, setSearchValue] = useState('');
-  const [pendingNotifs, setPendingNotifs] = useState(0);
   const profileRef = useRef(null);
   const moreRef = useRef(null);
 
@@ -18,17 +17,7 @@ export default function Header({ user }) {
     setSearchValue(params.get('search') || '');
   }, [location]);
 
-  useEffect(() => {
-    const fetchNotifs = async () => {
-      try {
-        const reqs = await db.find('JoinRequests');
-        setPendingNotifs(reqs.filter(r => r.status === 'Pending').length);
-      } catch { /* ignore */ }
-    };
-    fetchNotifs();
-    const interval = setInterval(fetchNotifs, 15000);
-    return () => clearInterval(interval);
-  }, []);
+
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -127,10 +116,7 @@ export default function Header({ user }) {
           </div>
         )}
 
-        <div className="notification-bell header-action-btn">
-          <i className="fa-solid fa-bell"></i>
-          {pendingNotifs > 0 && <div className="notification-badge"></div>}
-        </div>
+
 
         {user ? (
           <div className="profile-dropdown-container" ref={profileRef}>
