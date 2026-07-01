@@ -303,71 +303,58 @@ export default function Home() {
       </div>
 
       {/* VISION & MISSION */}
-      <section style={{ maxWidth: '1000px', margin: '0 auto 5rem', padding: '0 1.5rem' }}>
+      <section style={{ maxWidth: '1000px', margin: '0 auto 6rem', padding: '0 1.5rem' }}>
         <Reveal direction="up">
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '2rem' }}>
-            {/* Vision Card */}
-            <div style={{
-              background: 'var(--card)',
-              border: '1px solid var(--border)',
-              borderRadius: '16px',
-              padding: '2.5rem',
-              boxShadow: 'var(--shadow-sm)',
-              position: 'relative',
-              overflow: 'hidden'
-            }}>
-              <div style={{
-                position: 'absolute', top: '-20px', right: '-20px',
-                fontSize: '8rem', color: 'rgba(255,85,0,0.03)',
-                fontFamily: 'var(--font-display)', fontWeight: 900,
-                pointerEvents: 'none', userSelect: 'none'
-              }}>01</div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', marginBottom: '1.25rem' }}>
-                <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(255,85,0,0.06)', border: '1px solid rgba(255,85,0,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <i className="fa-solid fa-eye" style={{ color: 'var(--orange)', fontSize: '1.1rem' }} />
-                </div>
-                <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text)', margin: 0 }}>Club Vision</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '4rem', alignItems: 'start' }}>
+            
+            {/* Vision Column */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--orange)' }}></span>
+                <span style={{ fontSize: '0.76rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', color: 'var(--text-secondary)' }}>Our Vision</span>
               </div>
-              <p style={{ fontSize: '0.94rem', color: 'var(--text-secondary)', lineHeight: 1.7, margin: 0 }}>
-                To create a community of innovative learners passionate about Artificial Intelligence and its applications, fostering creativity, collaboration, and continuous learning to solve real-world problems.
+              <h3 style={{ fontSize: '2rem', fontWeight: 800, fontFamily: 'var(--font-display)', color: 'var(--text)', margin: 0, lineHeight: 1.25, letterSpacing: '-0.02em' }}>
+                Fostering AI Innovation & Collaborative Action
+              </h3>
+              <p style={{
+                fontSize: '1.02rem',
+                color: 'var(--text-secondary)',
+                lineHeight: 1.75,
+                margin: 0,
+                borderLeft: '3px solid var(--orange)',
+                paddingLeft: '1.25rem',
+                fontStyle: 'italic'
+              }}>
+                "To create a community of innovative learners passionate about Artificial Intelligence and its applications, fostering creativity, collaboration, and continuous learning to solve real-world problems."
               </p>
             </div>
 
-            {/* Mission Card */}
-            <div style={{
-              background: 'var(--card)',
-              border: '1px solid var(--border)',
-              borderRadius: '16px',
-              padding: '2.5rem',
-              boxShadow: 'var(--shadow-sm)',
-              position: 'relative',
-              overflow: 'hidden'
-            }}>
-              <div style={{
-                position: 'absolute', top: '-20px', right: '-20px',
-                fontSize: '8rem', color: 'rgba(255,85,0,0.03)',
-                fontFamily: 'var(--font-display)', fontWeight: 900,
-                pointerEvents: 'none', userSelect: 'none'
-              }}>02</div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', marginBottom: '1.25rem' }}>
-                <div style={{ width: 44, height: 44, borderRadius: 12, background: 'rgba(255,85,0,0.06)', border: '1px solid rgba(255,85,0,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <i className="fa-solid fa-bullseye" style={{ color: 'var(--orange)', fontSize: '1.1rem' }} />
-                </div>
-                <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text)', margin: 0 }}>Club Mission</h3>
+            {/* Mission Column */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '-0.25rem' }}>
+                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--orange)' }}></span>
+                <span style={{ fontSize: '0.76rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', color: 'var(--text-secondary)' }}>Our Mission</span>
               </div>
-              <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                 {[
-                  'To organize workshops, seminars, and hackathons that enhance AI-related technical skills.',
-                  'To promote interdisciplinary projects and research in the domains of Machine Learning, Deep Learning, and Automation.',
-                  'To provide a platform for students to explore AI tools and technologies through experiential learning and collaborative development.'
-                ].map((item, idx) => (
-                  <li key={idx} style={{ display: 'flex', gap: '0.65rem', alignItems: 'flex-start', fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-                    <i className="fa-solid fa-circle-check" style={{ color: 'var(--orange)', fontSize: '0.85rem', marginTop: '0.25rem', flexShrink: 0 }} />
-                    <span>{item}</span>
-                  </li>
+                  { num: '01', title: 'Workshops & Hackathons', text: 'To organize workshops, seminars, and hackathons that enhance AI-related technical skills.' },
+                  { num: '02', title: 'Interdisciplinary Research', text: 'To promote interdisciplinary projects and research in the domains of Machine Learning, Deep Learning, and Automation.' },
+                  { num: '03', title: 'Experiential Platform', text: 'To provide a platform for students to explore AI tools and technologies through experiential learning and collaborative development.' }
+                ].map((m, idx) => (
+                  <div key={idx} style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
+                    <span style={{ fontSize: '1.2rem', fontWeight: 800, fontFamily: 'var(--font-display)', color: 'var(--orange)', lineHeight: 1, marginTop: '0.2rem' }}>
+                      {m.num}
+                    </span>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                      <h4 style={{ fontSize: '0.94rem', fontWeight: 700, color: 'var(--text)', margin: 0 }}>{m.title}</h4>
+                      <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', lineHeight: 1.5, margin: 0 }}>{m.text}</p>
+                    </div>
+                  </div>
                 ))}
-              </ul>
+              </div>
             </div>
+
           </div>
         </Reveal>
       </section>
