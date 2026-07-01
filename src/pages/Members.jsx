@@ -136,7 +136,7 @@ export default function Members() {
                         background: '#f3f4f6',
                         display: 'flex',
                         alignItems: 'center',
-                        justify-content: 'center',
+                        justifyContent: 'center',
                         color: '#6b7280',
                         fontSize: '0.9rem',
                         transition: 'all 0.2s ease'
@@ -155,7 +155,7 @@ export default function Members() {
                         background: '#f3f4f6',
                         display: 'flex',
                         alignItems: 'center',
-                        justify-content: 'center',
+                        justifyContent: 'center',
                         color: '#6b7280',
                         fontSize: '0.9rem',
                         transition: 'all 0.2s ease'
@@ -174,7 +174,7 @@ export default function Members() {
                         background: '#f3f4f6',
                         display: 'flex',
                         alignItems: 'center',
-                        justify-content: 'center',
+                        justifyContent: 'center',
                         color: '#6b7280',
                         fontSize: '0.9rem',
                         transition: 'all 0.2s ease'
@@ -193,7 +193,7 @@ export default function Members() {
                         background: '#f3f4f6',
                         display: 'flex',
                         alignItems: 'center',
-                        justify-content: 'center',
+                        justifyContent: 'center',
                         color: '#6b7280',
                         fontSize: '0.9rem',
                         transition: 'all 0.2s ease'
