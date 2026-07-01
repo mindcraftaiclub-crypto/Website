@@ -7,6 +7,7 @@ const TABS = [
   { id: 'events',       label: 'Events',        icon: 'fa-calendar' },
   { id: 'announcements',label: 'Announcements', icon: 'fa-bullhorn' },
   { id: 'stats',        label: 'Stats Config',  icon: 'fa-chart-simple' },
+  { id: 'requests',     label: 'Applications',  icon: 'fa-file-signature' },
 ];
 
 /* ── helpers ── */
@@ -525,8 +526,6 @@ function StatsTab() {
     }
   };
 
-  if (loading) return <div className="loading-spinner" />;
-
   return (
     <div style={{ maxWidth: '520px', background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14, padding: '1.75rem' }}>
       <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '1.5rem', color: 'var(--text)' }}>
@@ -568,6 +567,118 @@ function StatsTab() {
       <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', marginTop: '0.5rem' }} onClick={handleSave} disabled={saving}>
         {saving ? <><i className="fa-solid fa-spinner fa-spin" /> Saving…</> : <><i className="fa-solid fa-floppy-disk" /> Save Stats</>}
       </button>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════ APPLICATIONS TAB ═══════════════════════════════════ */
+function RequestsTab() {
+  const [requests, setRequests] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const load = async () => {
+    try {
+      const list = await db.find('JoinRequests');
+      setRequests(list.sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt)));
+    } catch {
+      window.showToast('Error', 'Could not load applications.', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const handleStatus = async (id, status) => {
+    try {
+      await db.update('JoinRequests', id, { status });
+      window.showToast('Status Updated', `Application status set to ${status}.`, 'success');
+      load();
+    } catch (err) {
+      window.showToast('Error', err.message, 'error');
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this application?')) return;
+    try {
+      await db.delete('JoinRequests', id);
+      window.showToast('Deleted', 'Application request removed.', 'success');
+      setRequests(prev => prev.filter(r => r.id !== id));
+    } catch (err) {
+      window.showToast('Error', err.message, 'error');
+    }
+  };
+
+  if (loading) return <div className="loading-spinner" />;
+
+  return (
+    <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden' }}>
+      <div style={{ padding: '0.9rem 1.2rem', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <span style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--text)' }}>Recruitment Applications</span>
+        <Badge color="orange">{requests.length} submissions</Badge>
+      </div>
+
+      <div style={{ overflowX: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead>
+            <tr>
+              <th style={{ textAlign: 'left', padding: '0.75rem 1rem' }}>Name</th>
+              <th style={{ textAlign: 'left', padding: '0.75rem 1rem' }}>Details</th>
+              <th style={{ textAlign: 'left', padding: '0.75rem 1rem' }}>Contact</th>
+              <th style={{ textAlign: 'left', padding: '0.75rem 1rem' }}>Area</th>
+              <th style={{ textAlign: 'left', padding: '0.75rem 1rem' }}>Vibe Poll</th>
+              <th style={{ textAlign: 'left', padding: '0.75rem 1rem' }}>Status</th>
+              <th style={{ textAlign: 'center', padding: '0.75rem 1rem' }}>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {requests.length === 0 ? (
+              <tr>
+                <td colSpan={7} style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--text-muted)' }}>
+                  No applications received yet.
+                </td>
+              </tr>
+            ) : requests.map(r => (
+              <tr key={r.id} style={{ borderBottom: '1px solid var(--border-light)' }}>
+                <td style={{ padding: '0.85rem 1rem', fontWeight: 600 }}>{r.name}</td>
+                <td style={{ padding: '0.85rem 1rem', fontSize: '0.82rem' }}>
+                  <div style={{ fontWeight: 500 }}>Reg: {r.registerNumber}</div>
+                  <div style={{ color: 'var(--text-secondary)' }}>Class: {r.className}</div>
+                </td>
+                <td style={{ padding: '0.85rem 1rem', fontSize: '0.82rem' }}>
+                  <div>{r.email}</div>
+                  <div style={{ color: 'var(--text-secondary)' }}>{r.phone}</div>
+                </td>
+                <td style={{ padding: '0.85rem 1rem', fontSize: '0.82rem' }}>{r.interestedArea || '—'}</td>
+                <td style={{ padding: '0.85rem 1rem', fontSize: '0.82rem', textTransform: 'capitalize' }}>
+                  {r.codingStyle ? r.codingStyle.replace('_', ' ') : '—'}
+                </td>
+                <td style={{ padding: '0.85rem 1rem' }}>
+                  <Badge color={r.status === 'Approved' ? 'green' : r.status === 'Rejected' ? 'grey' : 'orange'}>
+                    {r.status || 'Pending'}
+                  </Badge>
+                </td>
+                <td style={{ padding: '0.85rem 1rem', display: 'flex', gap: '0.4rem', justifyContent: 'center' }}>
+                  {r.status !== 'Approved' && (
+                    <button onClick={() => handleStatus(r.id, 'Approved')} style={{ background: '#dcfce7', border: 'none', borderRadius: 6, padding: '4px 8px', color: '#15803d', fontSize: '0.74rem', fontWeight: 600, cursor: 'pointer' }}>
+                      Approve
+                    </button>
+                  )}
+                  {r.status !== 'Rejected' && (
+                    <button onClick={() => handleStatus(r.id, 'Rejected')} style={{ background: '#f3f4f6', border: 'none', borderRadius: 6, padding: '4px 8px', color: '#4b5563', fontSize: '0.74rem', fontWeight: 600, cursor: 'pointer' }}>
+                      Reject
+                    </button>
+                  )}
+                  <button onClick={() => handleDelete(r.id)} style={{ background: '#fee2e2', border: 'none', borderRadius: 6, padding: '4px 8px', color: '#dc2626', fontSize: '0.74rem', fontWeight: 600, cursor: 'pointer' }}>
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
@@ -652,6 +763,7 @@ export default function Admin({ user }) {
       {tab === 'events'        && <EventsTab />}
       {tab === 'announcements' && <AnnouncementsTab />}
       {tab === 'stats'         && <StatsTab />}
+      {tab === 'requests'      && <RequestsTab />}
     </div>
   );
 }
