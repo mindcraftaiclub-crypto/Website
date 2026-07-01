@@ -135,11 +135,26 @@ export default function Home() {
         // Fetch counts for home page stats
         const users = await db.find('Users');
         const settings = await db.getSettings();
+
+        const parseStat = (val, defaultVal, defaultSuffix = '') => {
+          if (val === undefined || val === null || val === '') {
+            return { value: defaultVal, suffix: defaultSuffix };
+          }
+          const str = String(val).trim();
+          const num = parseInt(str);
+          if (isNaN(num)) return { value: defaultVal, suffix: defaultSuffix };
+          const suffix = str.replace(String(num), '').trim();
+          return { value: num, suffix };
+        };
+
+        const projectsStat = parseStat(settings.projectsCount, 40, '+');
+        const awardsStat = parseStat(settings.awardsCount, 6, '');
+
         setStats([
-          { value: users.length || 120, suffix: '+', label: 'Members', icon: '👥' },
-          { value: parseInt(settings.projectsCount) || 40, suffix: '+', label: 'Projects', icon: '🛠️' },
-          { value: evts.length || 18, suffix: '', label: 'Events', icon: '📅' },
-          { value: parseInt(settings.awardsCount) || 6, suffix: '', label: 'Awards', icon: '🏆' },
+          { value: users.length || 0, suffix: '+', label: 'Members', icon: '👥' },
+          { value: projectsStat.value, suffix: projectsStat.suffix, label: 'Projects', icon: '🛠️' },
+          { value: evts.length || 0, suffix: '', label: 'Events', icon: '📅' },
+          { value: awardsStat.value, suffix: awardsStat.suffix, label: 'Awards', icon: '🏆' },
         ]);
       } catch (e) {
         console.error("Home stats load failed:", e);
