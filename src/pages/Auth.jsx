@@ -11,7 +11,12 @@ export default function Auth({ user }) {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    password: ''
+    password: '',
+    className: '',
+    registerNumber: '',
+    phone: '',
+    interestedArea: '',
+    codingStyle: ''
   });
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -48,9 +53,22 @@ export default function Auth({ user }) {
       window.showToast('Insecure Password', 'Passwords must contain at least 6 characters.', 'warning');
       return;
     }
+    if (!formData.codingStyle) {
+      window.showToast('Required Fields', 'Please choose your coding style poll option.', 'warning');
+      return;
+    }
     setLoading(true);
     try {
-      const newUser = await db.register(formData.name.trim(), formData.email.trim(), formData.password);
+      const newUser = await db.register(
+        formData.name.trim(),
+        formData.email.trim(),
+        formData.password,
+        formData.className.trim(),
+        formData.registerNumber.trim(),
+        formData.phone.trim(),
+        formData.interestedArea.trim(),
+        formData.codingStyle
+      );
       window.showToast('Registration Successful', `Welcome to Mindcraft AI, ${formData.name}!`, 'success');
       setTimeout(() => {
         navigate(redirectPath);
@@ -80,7 +98,7 @@ export default function Auth({ user }) {
   return (
     <div className="auth-container">
       <TiltCard tiltDegree={5} glow={false}>
-        <div className="auth-card">
+        <div className="auth-card" style={{ maxWidth: '480px' }}>
           <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
             <span style={{ fontSize: '1.2rem', fontWeight: 800, fontFamily: 'var(--font-display)', color: 'var(--text)', letterSpacing: '0.12em' }}>
               MINDCRAFT AI
@@ -177,9 +195,9 @@ export default function Auth({ user }) {
                   </button>
                 </form>
               ) : (
-                <form onSubmit={handleSignUp}>
-                  <div className="form-group">
-                    <label className="form-label" htmlFor="name">Full Name</label>
+                <form onSubmit={handleSignUp} style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label className="form-label" htmlFor="name">Full Name *</label>
                     <input
                       type="text"
                       className="form-input"
@@ -187,23 +205,68 @@ export default function Auth({ user }) {
                       required
                       value={formData.name}
                       onChange={handleInputChange}
-                      placeholder="Jane Doe"
+                      placeholder="Enter your name"
                     />
                   </div>
-                  <div className="form-group">
-                    <label className="form-label" htmlFor="email">Email Address</label>
-                    <input
-                      type="email"
-                      className="form-input"
-                      id="email"
-                      required
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      placeholder="name@email.com"
-                    />
+
+                  {/* Class and Register Number Row */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label className="form-label" htmlFor="className">Class *</label>
+                      <input
+                        type="text"
+                        className="form-input"
+                        id="className"
+                        required
+                        value={formData.className}
+                        onChange={handleInputChange}
+                        placeholder="e.g. 25CS2A"
+                      />
+                    </div>
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label className="form-label" htmlFor="registerNumber">Register Number *</label>
+                      <input
+                        type="text"
+                        className="form-input"
+                        id="registerNumber"
+                        required
+                        value={formData.registerNumber}
+                        onChange={handleInputChange}
+                        placeholder="e.g. 732925CSR001"
+                      />
+                    </div>
                   </div>
-                  <div className="form-group">
-                    <label className="form-label" htmlFor="password">Password (Min 6 chars)</label>
+
+                  {/* Phone and Email Row */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label className="form-label" htmlFor="phone">Phone Number *</label>
+                      <input
+                        type="tel"
+                        className="form-input"
+                        id="phone"
+                        required
+                        value={formData.phone}
+                        onChange={handleInputChange}
+                        placeholder="Enter phone number"
+                      />
+                    </div>
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label className="form-label" htmlFor="email">Email ID *</label>
+                      <input
+                        type="email"
+                        className="form-input"
+                        id="email"
+                        required
+                        value={formData.email}
+                        onChange={handleInputChange}
+                        placeholder="Enter email address"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label className="form-label" htmlFor="password">Password * (Min 6 chars)</label>
                     <div style={{ position: 'relative' }}>
                       <input
                         type={showPassword ? 'text' : 'password'}
@@ -232,16 +295,69 @@ export default function Auth({ user }) {
                       </button>
                     </div>
                   </div>
+
+                  <div className="form-group" style={{ marginBottom: 0 }}>
+                    <label className="form-label" htmlFor="interestedArea">Interested Area</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      id="interestedArea"
+                      value={formData.interestedArea}
+                      onChange={handleInputChange}
+                      placeholder="e.g. NLP, Computer Vision, MLOps"
+                    />
+                  </div>
+
+                  {/* Coding Style Vibe Poll */}
+                  <div>
+                    <label className="form-label">Choose Your Style / Vibe *</label>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.6rem' }}>
+                      {[
+                        { id: 'hard_coding', label: '💻 Hard Coding', desc: 'Writing pure, manual code' },
+                        { id: 'vibe_coding', label: '🎵 Vibe Coding', desc: 'Using AI tools & prompt flow' },
+                        { id: 'exploring',   label: '🔍 Exploring',   desc: 'Testing ideas and research' },
+                        { id: 'ai_or_other',  label: '🤖 AI & Tech',   desc: 'AI, data science or other fields' },
+                      ].map(opt => {
+                        const isSel = formData.codingStyle === opt.id;
+                        return (
+                          <div
+                            key={opt.id}
+                            onClick={() => setFormData(prev => ({ ...prev, codingStyle: opt.id }))}
+                            style={{
+                              border: `1px solid ${isSel ? 'var(--orange)' : 'var(--border)'}`,
+                              background: isSel ? 'rgba(255,85,0,0.03)' : 'var(--surface)',
+                              borderRadius: '8px',
+                              padding: '0.5rem 0.75rem',
+                              cursor: 'pointer',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: '0.1rem',
+                              transition: 'all 0.2s ease',
+                              textAlign: 'left'
+                            }}
+                          >
+                            <span style={{ fontSize: '0.8rem', fontWeight: 700, color: isSel ? 'var(--orange)' : 'var(--text)' }}>
+                              {opt.label}
+                            </span>
+                            <span style={{ fontSize: '0.68rem', color: 'var(--text-secondary)' }}>
+                              {opt.desc}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
                   <button
                     type="submit"
                     className="btn btn-primary"
                     disabled={loading}
-                    style={{ width: '100%', justifyContent: 'center' }}
+                    style={{ width: '100%', justifyContent: 'center', marginTop: '0.5rem' }}
                   >
                     {loading ? (
                       <div className="loading-spinner" style={{ width: '16px', height: '16px', borderWidth: '2px' }}></div>
                     ) : (
-                      <>Sign Up <i className="fa-solid fa-user-plus"></i></>
+                      <>Submit Application <i className="fa-solid fa-user-plus"></i></>
                     )}
                   </button>
                 </form>

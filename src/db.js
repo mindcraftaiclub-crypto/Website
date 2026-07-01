@@ -441,11 +441,16 @@ class FirebaseDatabase {
     }
   }
 
-  async register(name, email, password) {
+  async register(name, email, password, className, registerNumber, phone, interestedArea, codingStyle) {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const newUser = {
         id: userCredential.user.uid, name, email,
+        className: className || '',
+        registerNumber: registerNumber || '',
+        phone: phone || '',
+        interestedArea: interestedArea || '',
+        codingStyle: codingStyle || '',
         role: isAdminEmail(email) ? 'admin' : 'member',
         department: 'Computer Science', year: '1', position: 'Member',
         skills: [], linkedin: '', github: '',
