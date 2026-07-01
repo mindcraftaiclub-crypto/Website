@@ -216,8 +216,22 @@ class FirebaseDatabase {
           if (!userProfile) {
             userProfile = await this.findOne('Users', { email: firebaseUser.email });
             if (userProfile) {
-              await this.update('Users', userProfile.id, { id: firebaseUser.uid });
+              const oldId = userProfile.id;
               userProfile.id = firebaseUser.uid;
+              try {
+                await setDoc(doc(firestore, 'Users', firebaseUser.uid), userProfile);
+                try {
+                  await deleteDoc(doc(firestore, 'Users', oldId));
+                } catch (delErr) {
+                  console.warn("Could not delete old user doc:", delErr);
+                }
+              } catch (e) {
+                console.warn("Firestore link failed, updating locally:", e);
+                const localData = getLocalStorageCollection('Users');
+                const filtered = localData.filter(u => u.id !== oldId && u.id !== firebaseUser.uid);
+                filtered.push(userProfile);
+                setLocalStorageCollection('Users', filtered);
+              }
             } else {
               userProfile = {
                 id: firebaseUser.uid,
@@ -481,8 +495,22 @@ class FirebaseDatabase {
       if (!userProfile) {
         userProfile = await this.findOne('Users', { email: firebaseUser.email });
         if (userProfile) {
-          await this.update('Users', userProfile.id, { id: firebaseUser.uid });
+          const oldId = userProfile.id;
           userProfile.id = firebaseUser.uid;
+          try {
+            await setDoc(doc(firestore, 'Users', firebaseUser.uid), userProfile);
+            try {
+              await deleteDoc(doc(firestore, 'Users', oldId));
+            } catch (delErr) {
+              console.warn("Could not delete old user doc:", delErr);
+            }
+          } catch (e) {
+            console.warn("Firestore link failed, updating locally:", e);
+            const localData = getLocalStorageCollection('Users');
+            const filtered = localData.filter(u => u.id !== oldId && u.id !== firebaseUser.uid);
+            filtered.push(userProfile);
+            setLocalStorageCollection('Users', filtered);
+          }
         } else {
           userProfile = {
             id: firebaseUser.uid,
