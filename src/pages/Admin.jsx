@@ -41,6 +41,7 @@ export default function Admin({ user }) {
   // Members filters & states
   const [memberSearch, setMemberSearch] = useState('');
   const [memberYearFilter, setMemberYearFilter] = useState('all');
+  const [selectedFile, setSelectedFile] = useState(null);
 
   // Core board add member form state
   const [coreForm, setCoreForm] = useState({
@@ -134,12 +135,25 @@ export default function Admin({ user }) {
       return;
     }
 
+    let photoUrl = coreForm.photo.trim();
+
+    if (selectedFile) {
+      window.showToast('Uploading Photo', `Uploading ${selectedFile.name} to storage...`, 'info');
+      try {
+        photoUrl = await db.uploadFile(selectedFile, 'member_photos');
+        window.showToast('Photo Uploaded', 'Avatar photo uploaded successfully.', 'success');
+      } catch (err) {
+        window.showToast('Upload Failed', 'Failed to upload photo. Please try again.', 'error');
+        return;
+      }
+    }
+
     const newCore = {
       name: coreForm.name.trim(),
       email: coreForm.email.trim().toLowerCase(),
       role: coreForm.role.trim(),
       year: coreForm.year,
-      photo: coreForm.photo.trim() || `https://ui-avatars.com/api/?name=${encodeURIComponent(coreForm.name)}&background=ff5500&color=fff`,
+      photo: photoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(coreForm.name)}&background=ff5500&color=fff`,
       linkedin: coreForm.linkedin.trim(),
       instagram: coreForm.instagram.trim(),
       github: coreForm.github.trim(),
@@ -152,6 +166,7 @@ export default function Admin({ user }) {
       setCoreForm({
         name: '', email: '', role: '', year: '1', linkedin: '', instagram: '', github: '', portfolio: '', photo: ''
       });
+      setSelectedFile(null);
       fetchData();
     } catch (err) {
       window.showToast('Add Failed', err.message, 'error');
@@ -626,19 +641,45 @@ export default function Admin({ user }) {
 
                   <div className="form-group">
                     <label className="form-label" style={{ fontSize: '0.8rem' }}>Avatar Photo URL / File Upload</label>
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                       <input 
                         type="text" 
                         className="form-input" 
-                        value={coreForm.photo} 
-                        onChange={(e) => handleFormChange(setCoreForm, 'photo', e.target.value)} 
-                        placeholder="https://..." 
+                        value={selectedFile ? selectedFile.name : coreForm.photo} 
+                        onChange={(e) => {
+                          if (!selectedFile) {
+                            handleFormChange(setCoreForm, 'photo', e.target.value);
+                          }
+                        }} 
+                        disabled={!!selectedFile}
+                        placeholder={selectedFile ? "Using selected local image..." : "https://..."} 
                         style={{ flexGrow: 1 }}
                       />
-                      <label className="btn btn-secondary btn-sm" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', margin: 0, padding: '0.4rem 0.8rem', borderRadius: '8px', fontSize: '0.8rem' }}>
-                        <i className="fa-solid fa-cloud-arrow-up"></i>
-                        <input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => handleImageUpload(e, 'photo', setCoreForm)} />
+                      <label className="btn btn-secondary btn-sm" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', margin: 0, padding: '0.4rem 0.8rem', borderRadius: '8px', fontSize: '0.8rem', gap: '0.25rem' }}>
+                        <i className="fa-solid fa-image"></i> {selectedFile ? 'Change' : 'Choose'}
+                        <input 
+                          type="file" 
+                          accept="image/*" 
+                          style={{ display: 'none' }} 
+                          onChange={(e) => {
+                            if (e.target.files.length > 0) {
+                              setSelectedFile(e.target.files[0]);
+                              window.showToast('Image Selected', `Local image loaded: ${e.target.files[0].name}`, 'info');
+                            }
+                          }} 
+                        />
                       </label>
+                      {selectedFile && (
+                        <button 
+                          type="button" 
+                          className="btn btn-secondary btn-sm" 
+                          onClick={() => setSelectedFile(null)} 
+                          style={{ padding: '0.4rem 0.6rem', color: '#ef4444' }}
+                          title="Clear selected file"
+                        >
+                          <i className="fa-solid fa-trash-can"></i>
+                        </button>
+                      )}
                     </div>
                   </div>
 
