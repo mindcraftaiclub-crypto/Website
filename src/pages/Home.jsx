@@ -138,7 +138,7 @@ export default function Home() {
         setStats([
           { value: users.length || 120, suffix: '+', label: 'Members', icon: '👥' },
           { value: parseInt(settings.projectsCount) || 40, suffix: '+', label: 'Projects', icon: '🛠️' },
-          { value: parseInt(settings.eventsCount) || 18, suffix: '', label: 'Events', icon: '📅' },
+          { value: evts.length || 18, suffix: '', label: 'Events', icon: '📅' },
           { value: parseInt(settings.awardsCount) || 6, suffix: '', label: 'Awards', icon: '🏆' },
         ]);
       } catch (e) {

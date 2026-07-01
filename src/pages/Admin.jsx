@@ -495,7 +495,7 @@ function AnnouncementsTab() {
 function StatsTab() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ projectsCount: '40+', eventsCount: '18', awardsCount: '6' });
+  const [form, setForm] = useState({ projectsCount: '40+', awardsCount: '6' });
 
   useEffect(() => {
     (async () => {
@@ -503,7 +503,6 @@ function StatsTab() {
         const s = await db.getSettings();
         setForm({
           projectsCount: s.projectsCount ?? '40+',
-          eventsCount: s.eventsCount ?? '18',
           awardsCount: s.awardsCount ?? '6'
         });
       } catch (err) {
@@ -542,9 +541,15 @@ function StatsTab() {
         <input disabled value="Auto-Calculated from database size" style={{ width: '100%', padding: '0.65rem 0.9rem', border: '1px solid var(--border)', borderRadius: 8, fontSize: '0.88rem', color: 'var(--text-muted)', background: 'var(--surface)' }} />
       </div>
 
+      <div style={{ marginBottom: '1.25rem' }}>
+        <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.45rem' }}>
+          📅 Events Count (Calculated Automatically)
+        </label>
+        <input disabled value="Auto-Calculated from database size" style={{ width: '100%', padding: '0.65rem 0.9rem', border: '1px solid var(--border)', borderRadius: 8, fontSize: '0.88rem', color: 'var(--text-muted)', background: 'var(--surface)' }} />
+      </div>
+
       {[
         { key: 'projectsCount', label: '🛠️ Projects Count', placeholder: 'e.g. 40+' },
-        { key: 'eventsCount',   label: '📅 Events Count',   placeholder: 'e.g. 18' },
         { key: 'awardsCount',   label: '🏆 Awards Count',   placeholder: 'e.g. 6' }
       ].map(field => (
         <div key={field.key} style={{ marginBottom: '1.25rem' }}>
