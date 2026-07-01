@@ -447,31 +447,45 @@ export default function Home() {
 
       {/* FINAL CTA */}
       <section ref={ctaRef} style={{
-        position: 'relative', borderRadius: 'var(--radius-xl)', overflow: 'hidden',
-        padding: '5rem 2.5rem', textAlign: 'center', marginBottom: '3rem',
-        background: 'linear-gradient(135deg, rgba(var(--orange-rgb), 0.06) 0%, rgba(255,61,127,0.04) 50%, rgba(var(--orange-rgb), 0.06) 100%)',
-        border: '1px solid rgba(var(--orange-rgb), 0.18)',
-        boxShadow: '0 0 80px rgba(var(--orange-rgb), 0.08)',
-        ...reveal(ctaVis, 'scale'),
+        position: 'relative',
+        overflow: 'hidden',
+        padding: '6rem 2rem',
+        textAlign: 'center',
+        marginLeft: 'calc(-50vw + 50%)',
+        marginRight: 'calc(-50vw + 50%)',
+        width: '100vw',
+        background: 'var(--orange)',
+        ...reveal(ctaVis, 'up'),
       }}>
-        <div style={{ position: 'absolute', top: '50%', left: '30%', transform: 'translate(-50%, -50%)', width: 400, height: 300, background: 'radial-gradient(ellipse, rgba(var(--orange-rgb), 0.08), transparent 65%)', pointerEvents: 'none' }} />
-        <div style={{ position: 'absolute', top: '50%', right: '10%', transform: 'translateY(-50%)', width: 300, height: 300, background: 'radial-gradient(ellipse, rgba(var(--orange-rgb), 0.05), transparent 65%)', pointerEvents: 'none' }} />
+        {/* Subtle overlay pattern */}
+        <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 20% 50%, rgba(255,255,255,0.12) 0%, transparent 60%)', pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at 80% 50%, rgba(0,0,0,0.08) 0%, transparent 60%)', pointerEvents: 'none' }} />
 
-        <div style={{ position: 'relative', zIndex: 1 }}>
+        <div style={{ position: 'relative', zIndex: 1, maxWidth: 640, margin: '0 auto' }}>
           <h2 style={{
-            fontSize: 'clamp(2rem, 5vw, 3.2rem)', fontFamily: 'var(--font-display)', fontWeight: 900,
-            marginBottom: '1rem', color: 'var(--text)', lineHeight: 1.1,
+            fontSize: 'clamp(2.2rem, 5vw, 3.6rem)', fontFamily: 'var(--font-display)', fontWeight: 900,
+            marginBottom: '1rem', color: '#fff', lineHeight: 1.1, letterSpacing: '-0.02em',
           }}>
             Shape the Future<br />
-            <span className="gradient-text">of AI at CSE</span>
+            <span style={{ opacity: 0.88 }}>of AI at CSE</span>
           </h2>
-          <p style={{ fontSize: '1rem', color: 'var(--text-secondary)', marginBottom: '2.25rem', maxWidth: 480, margin: '0 auto 2.25rem', lineHeight: 1.75 }}>
+          <p style={{ fontSize: '1.05rem', color: 'rgba(255,255,255,0.85)', marginBottom: '2.5rem', maxWidth: 480, margin: '0 auto 2.5rem', lineHeight: 1.8 }}>
             Applications are open. Join the club building the next generation of AI-powered solutions — right here in CSE.
           </p>
-          <Link to="/join" className="btn btn-primary" style={{
-            borderRadius: 14, fontSize: '1rem', padding: '0.95rem 2.5rem',
-            boxShadow: '0 12px 30px rgba(var(--orange-rgb), 0.3)',
-          }}>
+          <Link to="/join" style={{
+            display: 'inline-flex', alignItems: 'center', gap: '0.6rem',
+            background: '#fff', color: 'var(--orange)',
+            border: 'none', borderRadius: 12,
+            padding: '0.95rem 2.5rem',
+            fontWeight: 700, fontSize: '1rem',
+            fontFamily: 'var(--font-body)',
+            boxShadow: '0 8px 30px rgba(0,0,0,0.15)',
+            transition: 'all 0.25s ease',
+            textDecoration: 'none',
+          }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#fff0e8'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.transform = 'translateY(0)'; }}
+          >
             Apply Now <i className="fa-solid fa-arrow-right" />
           </Link>
         </div>
