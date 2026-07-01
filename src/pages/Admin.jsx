@@ -117,7 +117,7 @@ function CoreBoardTab({ allMembers }) {
   const [uploading, setUploading] = useState(false);
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState('');
-  const [form, setForm] = useState({ name: '', email: '', role: '', year: '', linkedin: '', instagram: '', github: '', portfolio: '' });
+  const [form, setForm] = useState({ name: '', email: '', role: '', year: '', linkedin: '', instagram: '', github: '', portfolio: '', description: '' });
   const fileRef = useRef();
 
   const load = async () => {
@@ -155,7 +155,7 @@ function CoreBoardTab({ allMembers }) {
 
       await db.insert('CoreMembers', { ...form, photo: publicUrl, createdAt: new Date().toISOString() });
       window.showToast('Added!', `${form.name} added to the Core Board.`, 'success');
-      setForm({ name: '', email: '', role: '', year: '', linkedin: '', instagram: '', github: '', portfolio: '' });
+      setForm({ name: '', email: '', role: '', year: '', linkedin: '', instagram: '', github: '', portfolio: '', description: '' });
       setImageFile(null); setImagePreview('');
       if (fileRef.current) fileRef.current.value = '';
       load();
@@ -213,6 +213,11 @@ function CoreBoardTab({ allMembers }) {
               <input value={form[key]} onChange={e => setForm(p => ({ ...p, [key]: e.target.value }))} placeholder={placeholder} style={{ border: 'none', background: 'none', fontSize: '0.86rem', color: 'var(--text)', width: '100%' }} />
             </div>
           ))}
+
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.6rem', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '0.5rem 0.85rem', marginBottom: '0.65rem' }}>
+            <i className="fa-solid fa-paragraph" style={{ color: 'var(--text-muted)', fontSize: '0.82rem', width: 16, textAlign: 'center', marginTop: '0.25rem' }} />
+            <textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} placeholder="Description / Bio" rows={3} style={{ border: 'none', background: 'none', fontSize: '0.86rem', color: 'var(--text)', width: '100%', resize: 'none', outline: 'none', fontFamily: 'inherit' }} />
+          </div>
 
           {form.email && (
             <div style={{ marginBottom: '0.75rem', padding: '0.5rem 0.75rem', borderRadius: 8, background: isLinkedMember(form.email) ? '#dcfce7' : '#fef9c3', fontSize: '0.78rem', color: isLinkedMember(form.email) ? '#15803d' : '#92400e', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
