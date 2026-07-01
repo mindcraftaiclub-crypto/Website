@@ -449,11 +449,12 @@ export default function Home() {
       <section ref={ctaRef} style={{
         position: 'relative',
         overflow: 'hidden',
-        padding: '6rem 2rem',
+        padding: '6rem 4rem',
         textAlign: 'center',
-        marginLeft: 'calc(-50vw + 50%)',
-        marginRight: 'calc(-50vw + 50%)',
-        width: '100vw',
+        /* Break out of main-content padding on all sides */
+        marginLeft:   '-3.5rem',
+        marginRight:  '-3.5rem',
+        marginBottom: '-2.5rem',
         background: 'var(--orange)',
         ...reveal(ctaVis, 'up'),
       }}>
