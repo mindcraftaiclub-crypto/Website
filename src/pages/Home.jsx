@@ -150,31 +150,33 @@ export default function Home() {
         @keyframes blob-drift { 0%,100%{transform:scale(1) translate(0,0)} 50%{transform:scale(1.08) translate(20px,-15px)} }
         @keyframes marquee-ltr { from{transform:translateX(0)} to{transform:translateX(-50%)} }
         @keyframes ping-dot { 0%{transform:scale(1);opacity:.9} 100%{transform:scale(2.4);opacity:0} }
+        @keyframes hero-glow { 0%,100%{opacity:0.12} 50%{opacity:0.22} }
       `}</style>
 
       {/* HERO */}
       <section style={{
-        position: 'relative', minHeight: '90vh',
+        position: 'relative', minHeight: '92vh',
         display: 'flex', alignItems: 'center',
-        overflow: 'hidden', padding: '5rem 0 2rem',
+        overflow: 'hidden', padding: '5rem 0 3rem',
+        background: 'linear-gradient(180deg, rgba(255,107,53,0.04) 0%, transparent 60%)',
       }}>
         <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}>
           {/* Blob 1 Wrapper (Mouse Follow) */}
           <div ref={blob1Ref} style={{ position: 'absolute', inset: 0, transition: 'transform 0.1s ease-out' }}>
             <div style={{
-              position: 'absolute', top: '10%', left: '30%',
-              width: 500, height: 500, borderRadius: '50%',
-              background: 'radial-gradient(circle, rgba(255,85,0,0.1) 0%, transparent 60%)',
-              filter: 'blur(60px)', animation: 'blob-drift 14s ease-in-out infinite',
+              position: 'absolute', top: '5%', left: '25%',
+              width: 600, height: 600, borderRadius: '50%',
+              background: 'radial-gradient(circle, rgba(255,107,53,0.14) 0%, transparent 60%)',
+              filter: 'blur(80px)', animation: 'blob-drift 14s ease-in-out infinite',
             }} />
           </div>
           {/* Blob 2 Wrapper (Mouse Follow) */}
           <div ref={blob2Ref} style={{ position: 'absolute', inset: 0, transition: 'transform 0.1s ease-out' }}>
             <div style={{
               position: 'absolute', bottom: '-10%', right: '5%',
-              width: 400, height: 400, borderRadius: '50%',
-              background: 'radial-gradient(circle, rgba(255,107,53,0.08) 0%, transparent 60%)',
-              filter: 'blur(50px)', animation: 'blob-drift 18s ease-in-out infinite reverse',
+              width: 450, height: 450, borderRadius: '50%',
+              background: 'radial-gradient(circle, rgba(255,61,127,0.09) 0%, transparent 60%)',
+              filter: 'blur(70px)', animation: 'blob-drift 18s ease-in-out infinite reverse',
             }} />
           </div>
         </div>
@@ -203,27 +205,25 @@ export default function Home() {
             </div>
 
              <h1 style={{
-              fontSize: 'clamp(2.8rem, 5vw, 4.4rem)',
-              fontFamily: "'Dancing Script', cursive",
-              fontWeight: 700,
-              lineHeight: 1.35,
+              fontSize: 'clamp(2.6rem, 5.5vw, 4.8rem)',
+              fontFamily: 'var(--font-display)',
+              fontWeight: 800,
+              lineHeight: 1.1,
               marginBottom: '2rem',
               color: 'var(--text)',
+              letterSpacing: '-0.03em',
             }}>
               Build Real{' '}
               <span className="gradient-text" style={{
-                fontFamily: 'var(--font-display)',
                 fontWeight: 900,
-                fontSize: '0.85em',
-                letterSpacing: '-0.03em',
                 backgroundSize: '200% auto',
                 animation: 'shimmer-text 3s linear infinite',
                 display: 'inline-block',
-                verticalAlign: 'middle'
               }}>
                 AI Systems
               </span>
-              <br />with CSE's Best
+              <br />
+              <span style={{ color: 'var(--text-secondary)', fontWeight: 700, fontSize: '0.82em' }}>with CSE's Best</span>
             </h1>
 
             <p style={{
@@ -271,10 +271,10 @@ export default function Home() {
       {/* MARQUEE */}
       <div style={{
         overflow: 'hidden', padding: '1rem 0',
-        borderTop: '1px solid var(--border-light)',
-        borderBottom: '1px solid var(--border-light)',
+        borderTop: '1px solid var(--border)',
+        borderBottom: '1px solid var(--border)',
         marginBottom: '5rem',
-        background: 'rgba(var(--orange-rgb), 0.02)',
+        background: 'linear-gradient(90deg, rgba(var(--orange-rgb),0.03), rgba(var(--orange-rgb),0.06), rgba(var(--orange-rgb),0.03))',
       }}>
         <div style={{ display: 'flex', gap: '3rem', animation: 'marquee-ltr 28s linear infinite', width: 'max-content' }}>
           {[...MARQUEE_ITEMS, ...MARQUEE_ITEMS].map((item, i) => (
@@ -341,9 +341,9 @@ export default function Home() {
       }}>
         <TiltCard tiltDegree={5}>
           <div style={{
-            background: 'var(--card)', border: '1px solid var(--border-light)',
+            background: 'var(--card)', border: '1px solid var(--border)',
             borderRadius: 'var(--radius-lg)', padding: '2rem',
-            boxShadow: 'var(--shadow-sm)', minHeight: 340, display: 'flex', flexDirection: 'column',
+            boxShadow: 'var(--shadow-md)', minHeight: 340, display: 'flex', flexDirection: 'column',
             position: 'relative', overflow: 'hidden',
           }}>
             <div style={{ position: 'absolute', top: '-0.5rem', right: '-0.5rem', fontSize: '6rem', fontWeight: 900, opacity: 0.03, lineHeight: 1, pointerEvents: 'none', color: 'var(--orange)' }}>01</div>
@@ -370,21 +370,21 @@ export default function Home() {
 
         <TiltCard tiltDegree={5}>
           <div style={{
-            background: '#1A1A1A', border: '1px solid rgba(255,255,255,0.1)',
+            background: 'var(--surface-2)', border: '1px solid var(--border)',
             borderRadius: 'var(--radius-lg)', padding: '2rem',
             minHeight: 340, display: 'flex', flexDirection: 'column',
-            position: 'relative', overflow: 'hidden', color: '#fff',
+            position: 'relative', overflow: 'hidden',
           }}>
-            <div style={{ position: 'absolute', top: '-0.5rem', right: '-0.5rem', fontSize: '6rem', fontWeight: 900, opacity: 0.06, lineHeight: 1, color: '#fff', pointerEvents: 'none' }}>02</div>
-            <h3 style={{ fontSize: '1.1rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontFamily: 'var(--font-display)', color: '#fff' }}>
+            <div style={{ position: 'absolute', top: '-0.5rem', right: '-0.5rem', fontSize: '6rem', fontWeight: 900, opacity: 0.05, lineHeight: 1, color: 'var(--orange)', pointerEvents: 'none' }}>02</div>
+            <h3 style={{ fontSize: '1.1rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontFamily: 'var(--font-display)', color: 'var(--text)' }}>
               <span style={{ color: 'var(--orange)' }}>📅</span> Next Event
             </h3>
             {upcomingEvent ? (
               <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', flexGrow: 1 }}>
                 <div>
-                  {upcomingEvent.poster && <img src={upcomingEvent.poster} alt={upcomingEvent.title} style={{ width: '100%', height: 140, objectFit: 'contain', borderRadius: 10, marginBottom: '0.9rem', background: '#262626', border: '1px solid rgba(255,255,255,0.1)' }} />}
-                  <h4 style={{ fontSize: '1.05rem', fontWeight: 700, color: '#fff', marginBottom: '0.3rem' }}>{upcomingEvent.title}</h4>
-                  <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.55)', lineHeight: 1.5 }}>{upcomingEvent.description?.substring(0, 90)}...</p>
+                  {upcomingEvent.poster && <img src={upcomingEvent.poster} alt={upcomingEvent.title} style={{ width: '100%', height: 140, objectFit: 'contain', borderRadius: 10, marginBottom: '0.9rem', background: 'var(--surface)', border: '1px solid var(--border)' }} />}
+                  <h4 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text)', marginBottom: '0.3rem' }}>{upcomingEvent.title}</h4>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>{upcomingEvent.description?.substring(0, 90)}...</p>
                 </div>
                 <div style={{ marginTop: '1rem' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--orange)', fontWeight: 600, marginBottom: '0.9rem' }}>
@@ -397,7 +397,7 @@ export default function Home() {
                 </div>
               </div>
             ) : (
-              <div style={{ textAlign: 'center', margin: 'auto', color: 'rgba(255,255,255,0.3)' }}>
+              <div style={{ textAlign: 'center', margin: 'auto', color: 'var(--text-muted)' }}>
                 <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>📭</div>
                 <p style={{ fontSize: '0.85rem' }}>No upcoming events yet.</p>
               </div>
@@ -449,8 +449,9 @@ export default function Home() {
       <section ref={ctaRef} style={{
         position: 'relative', borderRadius: 'var(--radius-xl)', overflow: 'hidden',
         padding: '5rem 2.5rem', textAlign: 'center', marginBottom: '3rem',
-        background: 'linear-gradient(135deg, rgba(var(--orange-rgb), 0.03) 0%, rgba(var(--orange-rgb), 0.06) 50%, rgba(var(--orange-rgb), 0.03) 100%)',
-        border: '1px solid rgba(var(--orange-rgb), 0.1)',
+        background: 'linear-gradient(135deg, rgba(var(--orange-rgb), 0.06) 0%, rgba(255,61,127,0.04) 50%, rgba(var(--orange-rgb), 0.06) 100%)',
+        border: '1px solid rgba(var(--orange-rgb), 0.18)',
+        boxShadow: '0 0 80px rgba(var(--orange-rgb), 0.08)',
         ...reveal(ctaVis, 'scale'),
       }}>
         <div style={{ position: 'absolute', top: '50%', left: '30%', transform: 'translate(-50%, -50%)', width: 400, height: 300, background: 'radial-gradient(ellipse, rgba(var(--orange-rgb), 0.08), transparent 65%)', pointerEvents: 'none' }} />
