@@ -6,7 +6,11 @@ export default function Auth({ user }) {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const [activeTab, setActiveTab] = useState('signin');
+  const params = new URLSearchParams(location.search);
+  const redirectPath = params.get('redirect') || '/';
+  const tabParam = params.get('tab') || 'signin';
+
+  const [activeTab, setActiveTab] = useState(tabParam);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -20,12 +24,16 @@ export default function Auth({ user }) {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  const params = new URLSearchParams(location.search);
-  const redirectPath = params.get('redirect') || '/';
-
   useEffect(() => {
     if (user) navigate(redirectPath);
   }, [user, navigate, redirectPath]);
+
+  useEffect(() => {
+    const t = params.get('tab');
+    if (t === 'signup' || t === 'signin') {
+      setActiveTab(t);
+    }
+  }, [location.search]);
 
   const handleInputChange = (e) => {
     const { id, value } = e.target;
@@ -147,7 +155,7 @@ export default function Auth({ user }) {
           <div style={{ position: 'relative', zIndex: 1, marginTop: '2rem', display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
             {[
               { icon: 'fa-graduation-cap', title: 'Workshops & Seminars', desc: 'Enhance your AI skills with expert training.' },
-              { icon: 'fa-laptop-code', title: 'Hackathons & Sprints', desc: 'Build and deploy neural networks collaboratively.' },
+              { icon: 'fa-laptop-code', title: 'Practical Sessions & Sprints', desc: 'Build and deploy neural networks collaboratively.' },
               { icon: 'fa-brain', title: 'Experiential Learning', desc: 'Explore state-of-the-art tools and frameworks.' }
             ].map((f, i) => (
               <div key={i} style={{ display: 'flex', gap: '0.9rem', alignItems: 'flex-start' }}>

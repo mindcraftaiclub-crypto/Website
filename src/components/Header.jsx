@@ -100,7 +100,8 @@ export default function Header({ user }) {
 
         {user ? (
           <div className="profile-dropdown-container" ref={profileRef}>
-            <button className="profile-trigger" onClick={() => setIsProfileOpen(prev => !prev)}>
+            <button className="profile-trigger" onClick={() => setIsProfileOpen(prev => !prev)} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+              <span className="header-email-display" style={{ fontSize: '0.83rem', fontWeight: 600, color: 'var(--text-secondary)' }}>{user.email}</span>
               <img className="profile-avatar-top" src={user.photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name || 'User')}&background=ff5500&color=fff`} alt={user.name} />
             </button>
             <div className={`profile-dropdown-menu ${isProfileOpen ? 'active' : ''}`}>
@@ -119,8 +120,8 @@ export default function Header({ user }) {
             </div>
           </div>
         ) : (
-          <Link to="/auth" className="btn btn-primary btn-sm header-signin-btn">
-            <i className="fa-solid fa-right-to-bracket"></i> <span>Sign In</span>
+          <Link to="/auth?tab=signup" className="btn btn-primary btn-sm header-signin-btn">
+            <i className="fa-solid fa-user-plus"></i> <span>Join</span>
           </Link>
         )}
 
@@ -147,12 +148,19 @@ export default function Header({ user }) {
               <i className="fa-solid fa-right-from-bracket"></i> <span>Logout</span>
             </button>
           ) : (
-            <NavLink to="/auth" className="mobile-nav-link" onClick={() => setIsMobileOpen(false)}>
-              <i className="fa-solid fa-right-to-bracket"></i> <span>Sign In</span>
+            <NavLink to="/auth?tab=signup" className="mobile-nav-link" onClick={() => setIsMobileOpen(false)}>
+              <i className="fa-solid fa-user-plus"></i> <span>Join</span>
             </NavLink>
           )}
         </div>
       </div>
+      <style>{`
+        @media (max-width: 640px) {
+          .header-email-display {
+            display: none !important;
+          }
+        }
+      `}</style>
     </header>
   );
 }

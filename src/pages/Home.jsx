@@ -38,8 +38,8 @@ function CountUp({ to, suffix = '' }) {
 
 const FEATURES = [
   { icon: '🤖', title: 'Large Language Models', desc: 'Explore GPT, Gemini, LLaMA — fine-tuning, prompting, and RAG architectures.', backTitle: 'Core Topics', backItems: ['RAG Architectures', 'LoRA & QLoRA Fine-tuning', 'Vector DBs (Chroma, Pinecone)', 'LangChain & Agents'], plannedEvents: 'LLM Fine-Tuning Bootcamp, RAG Systems & Vector DBs Seminar.' },
-  { icon: '👁️', title: 'Computer Vision', desc: 'Object detection, image classification, segmentation with PyTorch & OpenCV.', backTitle: 'Core Topics', backItems: ['YOLOv8 Object Detection', 'U-Net Image Segmentation', 'PyTorch & Torchvision', 'Custom CNN Architectures'], plannedEvents: 'YOLOv8 Object Tracking Hackathon, PyTorch CNN Training Bootcamp.' },
-  { icon: '🔊', title: 'NLP & Speech AI', desc: 'Sentiment analysis, named entity recognition, and speech-to-text pipelines.', backTitle: 'Core Topics', backItems: ['Whisper Speech Recognition', 'Hugging Face Transformers', 'NER & POS Tagging', 'Seq2Seq Translation Models'], plannedEvents: 'Hugging Face Models Workshop, Whisper Speech-to-Text Hackathon.' },
+  { icon: '👁️', title: 'Computer Vision', desc: 'Object detection, image classification, segmentation with PyTorch & OpenCV.', backTitle: 'Core Topics', backItems: ['YOLOv8 Object Detection', 'U-Net Image Segmentation', 'PyTorch & Torchvision', 'Custom CNN Architectures'], plannedEvents: 'YOLOv8 Object Tracking Bootcamp, PyTorch CNN Training Bootcamp.' },
+  { icon: '🔊', title: 'NLP & Speech AI', desc: 'Sentiment analysis, named entity recognition, and speech-to-text pipelines.', backTitle: 'Core Topics', backItems: ['Whisper Speech Recognition', 'Hugging Face Transformers', 'NER & POS Tagging', 'Seq2Seq Translation Models'], plannedEvents: 'Hugging Face Models Workshop, Whisper Speech-to-Text Coding Sprint.' },
   { icon: '📊', title: 'Data Science & ML', desc: 'Scikit-learn, pandas, feature engineering, and model evaluation techniques.', backTitle: 'Core Topics', backItems: ['EDA & Feature Engineering', 'Ensemble Models (XGBoost)', 'Dimensionality Reduction (PCA)', 'Cross-Validation & Grid Search'], plannedEvents: 'Feature Engineering Sprint, XGBoost & Ensemble Models Workshop.' },
   { icon: '⚙️', title: 'MLOps & Deployment', desc: 'Docker, FastAPI, Hugging Face Spaces — ship your models to production.', backTitle: 'Core Topics', backItems: ['Docker Containerization', 'FastAPI Web Services', 'GitHub Actions CI/CD', 'Model Monitoring & Logging'], plannedEvents: 'Docker for AI Bootcamp, FastAPI & Cloud Deployments Seminar.' },
   { icon: '🧪', title: 'AI Research Projects', desc: 'Work on real IEEE-publishable research with faculty mentors and seniors.', backTitle: 'Core Topics', backItems: ['Academic Paper Drafting', 'Literature Review Syncs', 'Experimental Design', 'LaTeX Typesetting'], plannedEvents: 'IEEE Research Paper Drafting Series, LaTeX Technical Writing Bootcamp.' },
@@ -338,7 +338,7 @@ export default function Home() {
               
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                 {[
-                  { num: '01', title: 'Workshops & Hackathons', text: 'To organize workshops, seminars, and hackathons that enhance AI-related technical skills.' },
+                  { num: '01', title: 'Workshops & Seminars', text: 'To organize workshops, seminars, and collaborative sessions that enhance AI-related technical skills.' },
                   { num: '02', title: 'Interdisciplinary Research', text: 'To promote interdisciplinary projects and research in the domains of Machine Learning, Deep Learning, and Automation.' },
                   { num: '03', title: 'Experiential Platform', text: 'To provide a platform for students to explore AI tools and technologies through experiential learning and collaborative development.' }
                 ].map((m, idx) => (
