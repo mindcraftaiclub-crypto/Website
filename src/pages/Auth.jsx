@@ -20,13 +20,7 @@ export default function Auth({ user }) {
   const redirectPath = params.get('redirect') || '/';
 
   useEffect(() => {
-    if (user) {
-      if (user.role === 'admin' || user.email === 'admin@club.com') {
-        navigate('/admin');
-      } else {
-        navigate(redirectPath);
-      }
-    }
+    if (user) navigate(redirectPath);
   }, [user, navigate, redirectPath]);
 
   const handleInputChange = (e) => {
@@ -40,13 +34,7 @@ export default function Auth({ user }) {
     try {
       const result = await db.login(formData.email.trim(), formData.password);
       window.showToast('Login Successful', `Welcome back, ${result.user.name}!`, 'success');
-      setTimeout(() => {
-        if (result.user.email === 'admin@club.com' || result.user.role === 'admin') {
-          navigate('/admin');
-        } else {
-          navigate(redirectPath);
-        }
-      }, 1000);
+      setTimeout(() => navigate(redirectPath), 1000);
     } catch (err) {
       window.showToast('Authentication Failed', err.message, 'error');
     } finally {
@@ -79,13 +67,7 @@ export default function Auth({ user }) {
     try {
       const result = await db.loginWithGoogle();
       window.showToast('Login Successful', `Welcome, ${result.user.name}!`, 'success');
-      setTimeout(() => {
-        if (result.user.email === 'admin@club.com' || result.user.role === 'admin') {
-          navigate('/admin');
-        } else {
-          navigate(redirectPath);
-        }
-      }, 1000);
+      setTimeout(() => navigate(redirectPath), 1000);
     } catch (err) {
       window.showToast('Authentication Failed', err.message, 'error');
     } finally {

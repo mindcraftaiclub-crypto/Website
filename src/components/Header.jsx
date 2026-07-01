@@ -142,6 +142,11 @@ export default function Header({ user }) {
                 <span className="dropdown-user-name">{user.name}</span>
                 <span className="dropdown-user-role">{user.role}</span>
               </div>
+              {user.role === 'admin' && (
+                <Link to="/admin" className="dropdown-item" onClick={() => setIsProfileOpen(false)}>
+                  <i className="fa-solid fa-crown"></i> Admin Panel
+                </Link>
+              )}
               <button onClick={handleLogout} className="dropdown-item logout-btn">
                 <i className="fa-solid fa-right-from-bracket"></i> Logout
               </button>
@@ -168,6 +173,11 @@ export default function Header({ user }) {
             <i className={`fa-solid ${item.icon}`}></i> <span>{item.label}</span>
           </NavLink>
         ))}
+        {user && user.role === 'admin' && (
+          <NavLink to="/admin" className={({ isActive }) => `mobile-nav-link ${isActive ? 'active' : ''}`} onClick={() => setIsMobileOpen(false)}>
+            <i className="fa-solid fa-crown"></i> <span>Admin Panel</span>
+          </NavLink>
+        )}
 
         <div style={{ borderTop: '1px solid var(--border-light)', marginTop: '0.5rem', paddingTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
           {user ? (

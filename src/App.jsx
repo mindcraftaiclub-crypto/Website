@@ -16,6 +16,7 @@ import Winners from './pages/Winners';
 import Tasks from './pages/Tasks';
 import Join from './pages/Join';
 import Contact from './pages/Contact';
+import Admin from './pages/Admin';
 import Auth from './pages/Auth';
 
 export default function App() {
@@ -79,6 +80,7 @@ export default function App() {
             <Route path="/quiz" element={<ProtectedRoute><Quiz user={user} /></ProtectedRoute>} />
             <Route path="/tasks" element={<ProtectedRoute><Tasks user={user} /></ProtectedRoute>} />
             <Route path="/join" element={<Join user={user} />} />
+            <Route path="/admin" element={<ProtectedRoute roleRequired="admin"><Admin user={user} /></ProtectedRoute>} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         )}

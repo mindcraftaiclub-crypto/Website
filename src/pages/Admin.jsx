@@ -1,821 +1,517 @@
-import React, { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
-import { Line, Doughnut } from 'react-chartjs-2';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title as ChartTitle,
-  Tooltip,
-  Legend,
-  ArcElement
-} from 'chart.js';
-import db from '../db';
-import TiltCard from '../components/TiltCard';
-import Reveal from '../components/Reveal';
+import { useState, useEffect, useRef } from 'react';
+import db, { supabaseServiceClient } from '../db';
 
-// Register Chart.js elements
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  ChartTitle,
-  Tooltip,
-  Legend,
-  ArcElement
-);
+const TABS = [
+  { id: 'members',      label: 'Members',       icon: 'fa-users' },
+  { id: 'core',         label: 'Core Board',    icon: 'fa-star' },
+  { id: 'events',       label: 'Events',        icon: 'fa-calendar' },
+  { id: 'announcements',label: 'Announcements', icon: 'fa-bullhorn' },
+];
 
-export default function Admin({ user }) {
-  const [activeTab, setActiveTab] = useState('dashboard'); // dashboard, members, settings
+/* ── helpers ── */
+function downloadCSV(rows, filename) {
+  if (!rows.length) return;
+  const headers = Object.keys(rows[0]);
+  const csv = [headers.join(','), ...rows.map(r => headers.map(h => `"${(r[h] ?? '').toString().replace(/"/g, '""')}"`).join(','))].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+}
 
-  // Data collections state
-  const [users, setUsers] = useState([]);
-  const [coreMembers, setCoreMembers] = useState([]);
-  const [requests, setRequests] = useState([]);
-  const [quizzes, setQuizzes] = useState([]);
-  const [results, setResults] = useState([]);
-
-  // Members filters & states
-  const [memberSearch, setMemberSearch] = useState('');
-  const [memberYearFilter, setMemberYearFilter] = useState('all');
-  const [selectedFile, setSelectedFile] = useState(null);
-
-  // Core board add member form state
-  const [coreForm, setCoreForm] = useState({
-    name: '',
-    email: '',
-    role: '',
-    year: '1',
-    linkedin: '',
-    instagram: '',
-    github: '',
-    portfolio: '',
-    photo: ''
-  });
-
-  // Profile Settings Form state (from old Settings.jsx)
-  const [formData, setFormData] = useState({
-    name: '',
-    photo: '',
-    department: 'Computer Science',
-    year: '1',
-    linkedin: '',
-    github: '',
-    skills: ''
-  });
-
-  const [systemSettings, setSystemSettings] = useState({
-    language: 'en',
-    notifications: 'all'
-  });
-
-  // Fetch all database records
-  const fetchData = async () => {
-    try {
-      const u = await db.find('Users');
-      setUsers(u);
-      const cm = await db.find('CoreMembers');
-      setCoreMembers(cm);
-      const r = await db.find('JoinRequests');
-      setRequests(r);
-      const q = await db.find('Quiz');
-      setQuizzes(q);
-      const res = await db.find('QuizResults');
-      setResults(res);
-    } catch (e) {
-      console.error(e);
-    }
+function Badge({ color, children }) {
+  const colors = {
+    green:  { bg: '#dcfce7', text: '#15803d' },
+    orange: { bg: '#ffedd5', text: '#c2410c' },
+    blue:   { bg: '#dbeafe', text: '#1d4ed8' },
+    grey:   { bg: '#f3f4f6', text: '#6b7280' },
   };
+  const c = colors[color] || colors.grey;
+  return (
+    <span style={{ background: c.bg, color: c.text, padding: '2px 10px', borderRadius: 20, fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.04em' }}>
+      {children}
+    </span>
+  );
+}
+
+/* ═══════════════════════════════════ MEMBERS TAB ═══════════════════════════════════ */
+function MembersTab() {
+  const [members, setMembers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
-    fetchData();
-  }, [activeTab]);
+    (async () => {
+      try { setMembers(await db.find('Users')); }
+      catch { window.showToast('Error', 'Could not load members.', 'error'); }
+      finally { setLoading(false); }
+    })();
+  }, []);
 
-  // Sync profile settings with user details
-  useEffect(() => {
-    if (user) {
-      setFormData({
-        name: user.name || '',
-        photo: user.photo || '',
-        department: user.department || 'Computer Science',
-        year: String(user.year || '1'),
-        linkedin: user.linkedin || '',
-        github: user.github || '',
-        skills: user.skills ? user.skills.join(', ') : ''
-      });
-    }
-  }, [user]);
-
-  const handleFormChange = (setter, key, value) => {
-    setter(prev => ({ ...prev, [key]: value }));
-  };
-
-  const handleImageUpload = async (e, fieldKey, setter, bucket = 'uploads') => {
-    if (e.target.files.length > 0) {
-      const file = e.target.files[0];
-      window.showToast('Uploading File', 'Uploading file asset to storage...', 'info');
-      try {
-        const url = await db.uploadFile(file, bucket);
-        setter(prev => ({ ...prev, [fieldKey]: url }));
-        window.showToast('File Uploaded', 'Asset uploaded successfully.', 'success');
-      } catch (err) {
-        window.showToast('Upload Failed', err.message, 'error');
-      }
-    }
-  };
-
-  // Add Core Member Manual form submit
-  const handleAddCoreMember = async (e) => {
-    e.preventDefault();
-    if (!coreForm.name.trim() || !coreForm.email.trim() || !coreForm.role.trim()) {
-      window.showToast('Validation Error', 'Name, Email, and Position are required.', 'warning');
-      return;
-    }
-
-    let photoUrl = coreForm.photo.trim();
-
-    if (selectedFile) {
-      window.showToast('Uploading Photo', `Uploading ${selectedFile.name} to storage...`, 'info');
-      try {
-        photoUrl = await db.uploadFile(selectedFile, 'member_photos');
-        window.showToast('Photo Uploaded', 'Avatar photo uploaded successfully.', 'success');
-      } catch (err) {
-        window.showToast('Upload Failed', 'Failed to upload photo. Please try again.', 'error');
-        return;
-      }
-    }
-
-    const newCore = {
-      name: coreForm.name.trim(),
-      email: coreForm.email.trim().toLowerCase(),
-      role: coreForm.role.trim(),
-      year: coreForm.year,
-      photo: photoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(coreForm.name)}&background=ff5500&color=fff`,
-      linkedin: coreForm.linkedin.trim(),
-      instagram: coreForm.instagram.trim(),
-      github: coreForm.github.trim(),
-      portfolio: coreForm.portfolio.trim()
-    };
-
-    try {
-      await db.insert('CoreMembers', newCore);
-      window.showToast('Core Board Updated', `Successfully added ${newCore.name} to Core Board.`, 'success');
-      setCoreForm({
-        name: '', email: '', role: '', year: '1', linkedin: '', instagram: '', github: '', portfolio: '', photo: ''
-      });
-      setSelectedFile(null);
-      fetchData();
-    } catch (err) {
-      window.showToast('Add Failed', err.message, 'error');
-    }
-  };
-
-  // Delete Core Member
-  const handleDeleteCoreMember = async (id, name) => {
-    if (!window.confirm(`Are you sure you want to delete ${name} from the Core board?`)) return;
-    try {
-      await db.delete('CoreMembers', id);
-      window.showToast('Core Member Deleted', `Removed ${name} from Core board.`, 'success');
-      fetchData();
-    } catch (err) {
-      window.showToast('Delete Failed', err.message, 'error');
-    }
-  };
-
-  // Profile Form update handlers (Settings page integration)
-  const handleSettingsChange = (e) => {
-    const { id, value } = e.target;
-    setFormData(prev => ({ ...prev, [id]: value }));
-  };
-
-  const handleProfileSubmit = async (e) => {
-    e.preventDefault();
-    if (!user) return;
-
-    const skillsArray = formData.skills
-      ? formData.skills.split(',').map(s => s.trim()).filter(Boolean)
-      : [];
-
-    const updates = {
-      name: formData.name.trim(),
-      photo: formData.photo.trim(),
-      year: formData.year,
-      linkedin: formData.linkedin.trim(),
-      github: formData.github.trim(),
-      skills: skillsArray
-    };
-
-    try {
-      await db.update('Users', user.id, updates);
-      window.showToast('Profile Updated', 'Profile settings updated successfully.', 'success');
-    } catch (err) {
-      window.showToast('Update Failed', err.message, 'error');
-    }
-  };
-
-  const handleSaveSystemSettings = (e) => {
-    e.preventDefault();
-    window.showToast('Settings Saved', 'Local preferences saved to workspace cache.', 'success');
-  };
-
-  const handleDeleteAccount = async () => {
-    if (!user) return;
-    const conf = window.confirm('CRITICAL WARNING: Are you absolutely certain you wish to delete your account? This will purge your profile and logout. This action is irreversible.');
-    if (!conf) return;
-
-    try {
-      await db.delete('Users', user.id);
-      await db.logout();
-      window.showToast('Account Purged', 'Your profile details have been deleted.', 'error');
-      window.location.href = '/';
-    } catch (err) {
-      window.showToast('Purge Failed', err.message, 'error');
-    }
-  };
-
-  const handleDownloadMembersCSV = () => {
-    const filtered = users.filter(u => {
-      const matchSearch = !memberSearch.trim() || 
-        (u.name || '').toLowerCase().includes(memberSearch.toLowerCase()) || 
-        (u.email || '').toLowerCase().includes(memberSearch.toLowerCase());
-      const matchYear = memberYearFilter === 'all' || String(u.year) === memberYearFilter;
-      return matchSearch && matchYear;
-    });
-
-    if (filtered.length === 0) {
-      window.showToast('No Members', 'No members found to download.', 'info');
-      return;
-    }
-
-    const headers = ['Name', 'Email', 'Department', 'Year', 'Role', 'Core Member'];
-    const rows = filtered.map(u => {
-      const isCore = coreMembers.some(cm => cm.email.toLowerCase() === u.email.toLowerCase()) ? 'Yes' : 'No';
-      return [
-        `"${(u.name || '').replace(/"/g, '""')}"`,
-        `"${(u.email || '').replace(/"/g, '""')}"`,
-        `"${(u.department || 'Computer Science').replace(/"/g, '""')}"`,
-        `"Year ${u.year || '1'}"`,
-        `"${(u.role || 'member').replace(/"/g, '""')}"`,
-        `"${isCore}"`
-      ].join(',');
-    });
-
-    const csvContent = [headers.join(','), ...rows].join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `mindcraft-members-list-${new Date().toISOString().split('T')[0]}.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
-    window.showToast('CSV Downloaded', `Exported ${filtered.length} member records.`, 'success');
-  };
-
-  const getYearChartData = () => {
-    const counts = { 'Year 1': 0, 'Year 2': 0, 'Year 3': 0, 'Year 4': 0 };
-    users.forEach(u => {
-      const yrLabel = `Year ${u.year || 1}`;
-      counts[yrLabel] = (counts[yrLabel] || 0) + 1;
-    });
-
-    return {
-      labels: Object.keys(counts),
-      datasets: [{
-        data: Object.values(counts),
-        backgroundColor: [
-          'rgba(255, 85, 0, 0.7)',
-          'rgba(255, 107, 53, 0.7)',
-          'rgba(224, 74, 0, 0.7)',
-          'rgba(255, 85, 0, 0.4)'
-        ],
-        borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.1)'
-      }]
-    };
-  };
-
-  // Count core members also registered in general members list
-  const linkedCoreCount = coreMembers.filter(cm => users.some(u => u.email.toLowerCase() === cm.email.toLowerCase())).length;
+  const filtered = members.filter(m =>
+    (m.name || '').toLowerCase().includes(search.toLowerCase()) ||
+    (m.email || '').toLowerCase().includes(search.toLowerCase()) ||
+    (m.role || '').toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
-    <div className="admin-page animated-entrance">
-      {/* Page Header */}
-      <div className="page-header">
-        <span className="page-tag"><i className="fa-solid fa-crown"></i> Admin Center</span>
-        <h2 className="page-title">Management Dashboard</h2>
-        <p className="page-subtitle">Redesigned club directory, board members supervisor, and settings control center.</p>
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, padding: '0.45rem 0.9rem', flex: 1, maxWidth: 320 }}>
+          <i className="fa-solid fa-magnifying-glass" style={{ color: 'var(--text-muted)', fontSize: '0.82rem' }} />
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search members…" style={{ border: 'none', background: 'none', fontSize: '0.88rem', color: 'var(--text)', width: '100%' }} />
+        </div>
+        <div style={{ display: 'flex', gap: '0.6rem' }}>
+          <button className="btn btn-secondary btn-sm" onClick={() => downloadCSV(filtered, 'members.csv')}>
+            <i className="fa-solid fa-download" /> Export CSV
+          </button>
+        </div>
       </div>
 
-      {/* SUB TABS NAVIGATION */}
-      <div className="tab-menu" style={{ display: 'flex', gap: '1rem', borderBottom: '1px solid var(--border-light)', marginBottom: '2rem', flexWrap: 'wrap' }}>
-        <button 
-          className={`tab-btn ${activeTab === 'dashboard' ? 'active' : ''}`} 
-          onClick={() => setActiveTab('dashboard')} 
-          style={{ 
-            padding: '0.75rem 1.5rem', background: 'none', border: 'none', 
-            color: activeTab === 'dashboard' ? 'var(--orange)' : 'var(--text-muted)', 
-            fontWeight: 600, borderBottom: activeTab === 'dashboard' ? '2px solid var(--orange)' : '2px solid transparent', 
-            cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem'
-          }}
-        >
-          <i className="fa-solid fa-chart-simple"></i> Analytics
-        </button>
-        <button 
-          className={`tab-btn ${activeTab === 'members' ? 'active' : ''}`} 
-          onClick={() => setActiveTab('members')} 
-          style={{ 
-            padding: '0.75rem 1.5rem', background: 'none', border: 'none', 
-            color: activeTab === 'members' ? 'var(--orange)' : 'var(--text-muted)', 
-            fontWeight: 600, borderBottom: activeTab === 'members' ? '2px solid var(--orange)' : '2px solid transparent', 
-            cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem'
-          }}
-        >
-          <i className="fa-solid fa-users"></i> Members & Core Board
-        </button>
-        <button 
-          className={`tab-btn ${activeTab === 'settings' ? 'active' : ''}`} 
-          onClick={() => setActiveTab('settings')} 
-          style={{ 
-            padding: '0.75rem 1.5rem', background: 'none', border: 'none', 
-            color: activeTab === 'settings' ? 'var(--orange)' : 'var(--text-muted)', 
-            fontWeight: 600, borderBottom: activeTab === 'settings' ? '2px solid var(--orange)' : '2px solid transparent', 
-            cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem'
-          }}
-        >
-          <i className="fa-solid fa-gear"></i> Profile & System Settings
-        </button>
+      <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden' }}>
+        <div style={{ padding: '0.9rem 1.2rem', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--text)' }}>All Members</span>
+          <Badge color="blue">{filtered.length} total</Badge>
+        </div>
+        {loading ? (
+          <div className="loading-spinner" />
+        ) : (
+          <div style={{ overflowX: 'auto' }}>
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th><th>Email</th><th>Role</th><th>Year</th><th>Department</th><th>Joined</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.length === 0 ? (
+                  <tr><td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>No members found</td></tr>
+                ) : filtered.map(m => (
+                  <tr key={m.id}>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                        <img src={m.photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(m.name || 'U')}&background=ff5500&color=fff`} alt={m.name} style={{ width: 30, height: 30, borderRadius: '50%', objectFit: 'cover' }} />
+                        <span style={{ fontWeight: 600, color: 'var(--text)', fontSize: '0.88rem' }}>{m.name || '—'}</span>
+                      </div>
+                    </td>
+                    <td>{m.email}</td>
+                    <td><Badge color={m.role === 'admin' ? 'orange' : 'grey'}>{m.role || 'member'}</Badge></td>
+                    <td>{m.year || '—'}</td>
+                    <td>{m.department || '—'}</td>
+                    <td style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{m.createdAt ? new Date(m.createdAt).toLocaleDateString() : '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
+    </div>
+  );
+}
 
-      {/* TAB 1: ANALYTICS */}
-      {activeTab === 'dashboard' && (
-        <div className="admin-panel active" id="panel-dashboard">
-          <div className="admin-metrics" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
-            <TiltCard tiltDegree={5} glow={false}><div className="card" style={{ padding: '1.5rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
-              <div className="metric-icon" style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(255,85,0,0.1)', color: 'var(--orange)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}><i className="fa-solid fa-users"></i></div>
-              <div className="metric-info">
-                <h4 style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Registered Members</h4>
-                <h2 style={{ fontSize: '1.75rem', fontWeight: 800 }}>{users.length}</h2>
-              </div>
-            </div></TiltCard>
-            <TiltCard tiltDegree={5} glow={false}><div className="card" style={{ padding: '1.5rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
-              <div className="metric-icon" style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(224,74,0,0.1)', color: 'var(--orange)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}><i className="fa-solid fa-crown"></i></div>
-              <div className="metric-info">
-                <h4 style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Core Board</h4>
-                <h2 style={{ fontSize: '1.75rem', fontWeight: 800 }}>{coreMembers.length}</h2>
-              </div>
-            </div></TiltCard>
-            <TiltCard tiltDegree={5} glow={false}><div className="card" style={{ padding: '1.5rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
-              <div className="metric-icon" style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'rgba(16,185,129,0.1)', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}><i className="fa-solid fa-circle-check"></i></div>
-              <div className="metric-info">
-                <h4 style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Linked Core</h4>
-                <h2 style={{ fontSize: '1.75rem', fontWeight: 800 }}>{linkedCoreCount}</h2>
-              </div>
-            </div></TiltCard>
+/* ═══════════════════════════════════ CORE BOARD TAB ═══════════════════════════════════ */
+function CoreBoardTab({ allMembers }) {
+  const [coreMembers, setCoreMembers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState('');
+  const [form, setForm] = useState({ name: '', email: '', role: '', year: '', linkedin: '', instagram: '', github: '', portfolio: '' });
+  const fileRef = useRef();
+
+  const load = async () => {
+    try { setCoreMembers(await db.find('CoreMembers')); }
+    catch { window.showToast('Error', 'Could not load core members.', 'error'); }
+    finally { setLoading(false); }
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const handleImageChange = e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+  };
+
+  const isLinkedMember = email => allMembers.some(m => m.email?.toLowerCase() === email?.toLowerCase());
+
+  const handleAdd = async () => {
+    if (!form.name || !form.email || !form.role) {
+      window.showToast('Missing Fields', 'Name, Email and Role are required.', 'error'); return;
+    }
+    if (!imageFile) {
+      window.showToast('No Photo', 'Please select a photo first.', 'error'); return;
+    }
+    setUploading(true);
+    try {
+      // Upload image to Supabase
+      const ext = imageFile.name.split('.').pop();
+      const path = `core/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error: uploadError } = await supabaseServiceClient.storage.from('member_photos').upload(path, imageFile, { upsert: true });
+      if (uploadError) throw new Error(uploadError.message);
+      const { data: { publicUrl } } = supabaseServiceClient.storage.from('member_photos').getPublicUrl(path);
+
+      await db.insert('CoreMembers', { ...form, photo: publicUrl, createdAt: new Date().toISOString() });
+      window.showToast('Added!', `${form.name} added to the Core Board.`, 'success');
+      setForm({ name: '', email: '', role: '', year: '', linkedin: '', instagram: '', github: '', portfolio: '' });
+      setImageFile(null); setImagePreview('');
+      if (fileRef.current) fileRef.current.value = '';
+      load();
+    } catch (err) {
+      window.showToast('Upload Failed', err.message, 'error');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDelete = async (id, name) => {
+    if (!window.confirm(`Delete ${name} from Core Board?`)) return;
+    try {
+      await db.delete('CoreMembers', id);
+      window.showToast('Deleted', `${name} removed.`, 'success');
+      setCoreMembers(prev => prev.filter(m => m.id !== id));
+    } catch (err) {
+      window.showToast('Error', err.message, 'error');
+    }
+  };
+
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.4fr', gap: '1.5rem' }}>
+      {/* ADD FORM */}
+      <div>
+        <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14, padding: '1.5rem' }}>
+          <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1.25rem', color: 'var(--text)' }}>
+            <i className="fa-solid fa-user-plus" style={{ color: 'var(--orange)', marginRight: '0.5rem' }} />
+            Add Core Member
+          </h3>
+
+          {/* Photo Upload */}
+          <div style={{ textAlign: 'center', marginBottom: '1.25rem' }}>
+            <div onClick={() => fileRef.current?.click()} style={{ width: 90, height: 90, borderRadius: '50%', margin: '0 auto 0.75rem', background: 'var(--surface)', border: `2px dashed ${imagePreview ? 'var(--orange)' : 'var(--border)'}`, overflow: 'hidden', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'border-color 0.25s' }}>
+              {imagePreview ? <img src={imagePreview} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <i className="fa-solid fa-camera" style={{ color: 'var(--text-muted)', fontSize: '1.4rem' }} />}
+            </div>
+            <button className="btn btn-outline btn-sm" onClick={() => fileRef.current?.click()}>
+              <i className="fa-solid fa-upload" /> {imageFile ? 'Change Photo' : 'Upload Photo'}
+            </button>
+            <input ref={fileRef} type="file" accept="image/*" onChange={handleImageChange} style={{ display: 'none' }} />
           </div>
 
-          <Reveal direction="up" delay="0.1s"><div className="admin-charts-grid" style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '2rem', marginBottom: '3rem' }}>
-            <div className="card" style={{ padding: '2rem' }}>
-              <h3 style={{ fontSize: '1.15rem', marginBottom: '1.5rem' }}><i className="fa-solid fa-chart-line"></i> User Growth & Sprints</h3>
-              <div style={{ position: 'relative', height: '260px' }}>
-                <Line 
-                  data={{
-                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-                    datasets: [
-                      {
-                        label: 'Registrations',
-                        data: [1, 2, 3, 5, 8, users.length],
-                        borderColor: 'rgb(255, 85, 0)',
-                        backgroundColor: 'rgba(255, 85, 0, 0.15)',
-                        tension: 0.4,
-                        fill: true
-                      },
-                      {
-                        label: 'Quiz Sprints Taken',
-                        data: [0, 1, 1, 2, 4, results.length],
-                        borderColor: 'rgb(255, 107, 53)',
-                        backgroundColor: 'rgba(255, 107, 53, 0.15)',
-                        tension: 0.4,
-                        fill: true
-                      }
-                    ]
-                  }}
-                  options={{
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { labels: { color: '#1a1a1a' } } },
-                    scales: {
-                      x: { ticks: { color: '#6b6b6b' }, grid: { color: 'rgba(0,0,0,0.06)' } },
-                      y: { ticks: { color: '#6b6b6b' }, grid: { color: 'rgba(0,0,0,0.06)' } }
-                    }
-                  }}
-                />
-              </div>
+          {[
+            { key: 'name',      placeholder: 'Full Name *',    icon: 'fa-user' },
+            { key: 'email',     placeholder: 'Email *',        icon: 'fa-envelope' },
+            { key: 'role',      placeholder: 'Role / Position *', icon: 'fa-id-badge' },
+            { key: 'year',      placeholder: 'Year (e.g. 2024)', icon: 'fa-graduation-cap' },
+            { key: 'linkedin',  placeholder: 'LinkedIn URL',   icon: 'fa-linkedin' },
+            { key: 'instagram', placeholder: 'Instagram URL',  icon: 'fa-instagram' },
+            { key: 'github',    placeholder: 'GitHub URL',     icon: 'fa-github' },
+            { key: 'portfolio', placeholder: 'Portfolio URL',  icon: 'fa-globe' },
+          ].map(({ key, placeholder, icon }) => (
+            <div key={key} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '0.5rem 0.85rem', marginBottom: '0.65rem' }}>
+              <i className={`fa-${icon.includes('linkedin') || icon.includes('instagram') || icon.includes('github') ? 'brands' : 'solid'} ${icon}`} style={{ color: 'var(--text-muted)', fontSize: '0.82rem', width: 16, textAlign: 'center' }} />
+              <input value={form[key]} onChange={e => setForm(p => ({ ...p, [key]: e.target.value }))} placeholder={placeholder} style={{ border: 'none', background: 'none', fontSize: '0.86rem', color: 'var(--text)', width: '100%' }} />
             </div>
+          ))}
 
-            <div className="card" style={{ padding: '2rem' }}>
-              <h3 style={{ fontSize: '1.15rem', marginBottom: '1.5rem' }}><i className="fa-solid fa-chart-pie"></i> Academic Year Distribution</h3>
-              <div style={{ position: 'relative', height: '260px' }}>
-                <Doughnut 
-                  data={getYearChartData()}
-                  options={{
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { labels: { color: '#1a1a1a' } } }
-                  }}
-                />
-              </div>
+          {form.email && (
+            <div style={{ marginBottom: '0.75rem', padding: '0.5rem 0.75rem', borderRadius: 8, background: isLinkedMember(form.email) ? '#dcfce7' : '#fef9c3', fontSize: '0.78rem', color: isLinkedMember(form.email) ? '#15803d' : '#92400e', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <i className={`fa-solid ${isLinkedMember(form.email) ? 'fa-circle-check' : 'fa-circle-exclamation'}`} />
+              {isLinkedMember(form.email) ? 'Email found in members list — will be auto-linked.' : 'Email not found in members list.'}
             </div>
-          </div></Reveal>
+          )}
 
-          <Reveal direction="up" delay="0.2s"><div className="card" style={{ padding: '2rem' }}>
-            <h3 style={{ fontSize: '1.15rem', marginBottom: '1.5rem' }}><i className="fa-solid fa-list-ul"></i> System Audit Log</h3>
-            <div id="audit-log" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              <div className="leaderboard-row" style={{ padding: '0.75rem', border: '1px solid var(--border-light)', borderRadius: '8px', fontSize: '0.85rem' }}><span style={{ color: 'var(--text-muted)' }}>2026-06-26 16:08</span> <strong>System Audit Node:</strong> Local Storage database adaptor initialized successfully.</div>
-              <div className="leaderboard-row" style={{ padding: '0.75rem', border: '1px solid var(--border-light)', borderRadius: '8px', fontSize: '0.85rem' }}><span style={{ color: 'var(--text-muted)' }}>2026-06-26 14:20</span> <strong>Jane Doe</strong> uploaded file "jane-doe-card.html" for weekly sprint task.</div>
-              <div className="leaderboard-row" style={{ padding: '0.75rem', border: '1px solid var(--border-light)', borderRadius: '8px', fontSize: '0.85rem' }}><span style={{ color: 'var(--text-muted)' }}>2026-06-25 10:00</span> <strong>Jane Doe</strong> completed CSS layouts quiz, score 3/3.</div>
-            </div>
-          </div></Reveal>
+          <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', marginTop: '0.25rem' }} onClick={handleAdd} disabled={uploading}>
+            {uploading ? <><i className="fa-solid fa-spinner fa-spin" /> Uploading…</> : <><i className="fa-solid fa-plus" /> Add to Core Board</>}
+          </button>
         </div>
-      )}
+      </div>
 
-      {/* TAB 2: MEMBERS & CORE BOARD */}
-      {activeTab === 'members' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
-          {/* SECTION 2A: REGISTERED MEMBERS LIST */}
-          <Reveal direction="up">
-            <div className="card" style={{ padding: '2rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
-                <h3 style={{ fontSize: '1.25rem', margin: 0, fontWeight: 700 }}><i className="fa-solid fa-users" style={{ color: 'var(--orange)' }}></i> Registered Members Directory</h3>
-                <button onClick={handleDownloadMembersCSV} className="btn btn-secondary btn-sm" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', borderRadius: '8px' }}>
-                  <i className="fa-solid fa-file-csv"></i> Download CSV
+      {/* CORE MEMBERS LIST */}
+      <div>
+        <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden' }}>
+          <div style={{ padding: '0.9rem 1.2rem', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--text)' }}>Current Core Board</span>
+            <Badge color="orange">{coreMembers.length} members</Badge>
+          </div>
+          {loading ? <div className="loading-spinner" /> : (
+            <div style={{ padding: '0.75rem' }}>
+              {coreMembers.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--text-muted)' }}>
+                  <i className="fa-solid fa-star" style={{ fontSize: '2rem', marginBottom: '0.75rem', opacity: 0.3 }} />
+                  <p style={{ fontSize: '0.88rem' }}>No core members yet.</p>
+                </div>
+              ) : coreMembers.map(m => (
+                <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', padding: '0.75rem', borderRadius: 10, transition: 'background 0.2s' }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'var(--surface)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                >
+                  <img src={m.photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(m.name)}&background=ff5500&color=fff`} alt={m.name} style={{ width: 46, height: 46, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--border)', flexShrink: 0 }} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flexWrap: 'wrap' }}>
+                      <span style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text)' }}>{m.name}</span>
+                      {isLinkedMember(m.email) && <Badge color="green">Linked</Badge>}
+                    </div>
+                    <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>{m.role}</div>
+                    <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.3rem' }}>
+                      {m.linkedin && <a href={m.linkedin} target="_blank" rel="noreferrer" style={{ color: '#0077b5', fontSize: '0.85rem' }}><i className="fa-brands fa-linkedin" /></a>}
+                      {m.github && <a href={m.github} target="_blank" rel="noreferrer" style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}><i className="fa-brands fa-github" /></a>}
+                      {m.instagram && <a href={m.instagram} target="_blank" rel="noreferrer" style={{ color: '#e1306c', fontSize: '0.85rem' }}><i className="fa-brands fa-instagram" /></a>}
+                      {m.portfolio && <a href={m.portfolio} target="_blank" rel="noreferrer" style={{ color: 'var(--orange)', fontSize: '0.85rem' }}><i className="fa-solid fa-globe" /></a>}
+                    </div>
+                  </div>
+                  <button onClick={() => handleDelete(m.id, m.name)} style={{ background: '#fee2e2', border: 'none', borderRadius: 8, width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#dc2626', fontSize: '0.82rem', transition: 'background 0.2s', flexShrink: 0 }}
+                    onMouseEnter={e => e.currentTarget.style.background = '#fecaca'}
+                    onMouseLeave={e => e.currentTarget.style.background = '#fee2e2'}
+                  >
+                    <i className="fa-solid fa-trash" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════ EVENTS TAB ═══════════════════════════════════ */
+function EventsTab() {
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [form, setForm] = useState({ title: '', date: '', venue: '', description: '', poster: '' });
+  const [saving, setSaving] = useState(false);
+
+  const load = async () => {
+    try { setEvents((await db.find('Events')).sort((a, b) => new Date(b.date) - new Date(a.date))); }
+    catch { window.showToast('Error', 'Could not load events.', 'error'); }
+    finally { setLoading(false); }
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const handleAdd = async () => {
+    if (!form.title || !form.date) { window.showToast('Missing Fields', 'Title and Date are required.', 'error'); return; }
+    setSaving(true);
+    try {
+      await db.insert('Events', { ...form, createdAt: new Date().toISOString() });
+      window.showToast('Event Added!', form.title, 'success');
+      setForm({ title: '', date: '', venue: '', description: '', poster: '' });
+      load();
+    } catch (err) { window.showToast('Error', err.message, 'error'); }
+    finally { setSaving(false); }
+  };
+
+  const handleDelete = async (id, title) => {
+    if (!window.confirm(`Delete event: ${title}?`)) return;
+    try { await db.delete('Events', id); setEvents(prev => prev.filter(e => e.id !== id)); window.showToast('Deleted', title, 'success'); }
+    catch (err) { window.showToast('Error', err.message, 'error'); }
+  };
+
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.4fr', gap: '1.5rem' }}>
+      <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14, padding: '1.5rem' }}>
+        <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1.25rem', color: 'var(--text)' }}>
+          <i className="fa-solid fa-calendar-plus" style={{ color: 'var(--orange)', marginRight: '0.5rem' }} />Add Event
+        </h3>
+        {[
+          { key: 'title', placeholder: 'Event Title *', type: 'text' },
+          { key: 'date', placeholder: 'Date *', type: 'date' },
+          { key: 'venue', placeholder: 'Venue / Location', type: 'text' },
+          { key: 'poster', placeholder: 'Poster URL (optional)', type: 'text' },
+        ].map(({ key, placeholder, type }) => (
+          <input key={key} type={type} value={form[key]} onChange={e => setForm(p => ({ ...p, [key]: e.target.value }))} placeholder={placeholder}
+            style={{ width: '100%', padding: '0.65rem 0.9rem', border: '1px solid var(--border)', borderRadius: 8, fontSize: '0.88rem', color: 'var(--text)', background: 'var(--surface)', marginBottom: '0.65rem' }} />
+        ))}
+        <textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} placeholder="Description" rows={3}
+          style={{ width: '100%', padding: '0.65rem 0.9rem', border: '1px solid var(--border)', borderRadius: 8, fontSize: '0.88rem', color: 'var(--text)', background: 'var(--surface)', marginBottom: '0.75rem', resize: 'vertical' }} />
+        <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }} onClick={handleAdd} disabled={saving}>
+          {saving ? <><i className="fa-solid fa-spinner fa-spin" /> Saving…</> : <><i className="fa-solid fa-plus" /> Add Event</>}
+        </button>
+      </div>
+
+      <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden' }}>
+        <div style={{ padding: '0.9rem 1.2rem', borderBottom: '1px solid var(--border)', fontWeight: 700, fontSize: '0.88rem' }}>All Events</div>
+        {loading ? <div className="loading-spinner" /> : (
+          <div style={{ padding: '0.75rem', maxHeight: 460, overflowY: 'auto' }}>
+            {events.length === 0 ? <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>No events yet.</div> : events.map(ev => (
+              <div key={ev.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.85rem', padding: '0.85rem', borderRadius: 10, borderBottom: '1px solid var(--border-light)' }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text)' }}>{ev.title}</div>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
+                    <i className="fa-solid fa-calendar" style={{ marginRight: '0.3rem' }} />{ev.date}
+                    {ev.venue && <><i className="fa-solid fa-location-dot" style={{ marginLeft: '0.8rem', marginRight: '0.3rem' }} />{ev.venue}</>}
+                  </div>
+                </div>
+                <button onClick={() => handleDelete(ev.id, ev.title)} style={{ background: '#fee2e2', border: 'none', borderRadius: 7, width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#dc2626', fontSize: '0.78rem', flexShrink: 0 }}>
+                  <i className="fa-solid fa-trash" />
                 </button>
               </div>
-
-              {/* Filters */}
-              <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
-                <input 
-                  type="text" 
-                  className="form-input" 
-                  placeholder="Search by name or email..." 
-                  value={memberSearch}
-                  onChange={(e) => setMemberSearch(e.target.value)}
-                  style={{ flexGrow: 1, padding: '0.55rem 0.8rem', fontSize: '0.85rem' }}
-                />
-                <select 
-                  className="form-input" 
-                  value={memberYearFilter}
-                  onChange={(e) => setMemberYearFilter(e.target.value)}
-                  style={{ width: '150px', padding: '0.55rem 0.8rem', fontSize: '0.85rem' }}
-                >
-                  <option value="all">All Years</option>
-                  <option value="1">Year 1</option>
-                  <option value="2">Year 2</option>
-                  <option value="3">Year 3</option>
-                  <option value="4">Year 4</option>
-                </select>
-              </div>
-
-              {/* Members Table */}
-              {(() => {
-                const filtered = users.filter(u => {
-                  const matchSearch = !memberSearch.trim() || 
-                    (u.name || '').toLowerCase().includes(memberSearch.toLowerCase()) || 
-                    (u.email || '').toLowerCase().includes(memberSearch.toLowerCase());
-                  const matchYear = memberYearFilter === 'all' || String(u.year) === memberYearFilter;
-                  return matchSearch && matchYear;
-                });
-
-                if (filtered.length === 0) {
-                  return <p style={{ color: 'var(--text-muted)', fontStyle: 'italic', textAlign: 'center', padding: '2rem' }}>No registered members match criteria.</p>;
-                }
-
-                return (
-                  <div style={{ overflowX: 'auto', border: '1px solid var(--border-light)', borderRadius: '12px' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.875rem' }}>
-                      <thead>
-                        <tr style={{ borderBottom: '1px solid var(--border-light)', background: 'rgba(0,0,0,0.02)' }}>
-                          <th style={{ padding: '0.85rem 1rem' }}>Avatar</th>
-                          <th style={{ padding: '0.85rem 1rem' }}>Name</th>
-                          <th style={{ padding: '0.85rem 1rem' }}>Email</th>
-                          <th style={{ padding: '0.85rem 1rem' }}>Class</th>
-                          <th style={{ padding: '0.85rem 1rem' }}>Role</th>
-                          <th style={{ padding: '0.85rem 1rem' }}>Core Board</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {filtered.map((u, idx) => {
-                          const isCore = coreMembers.some(cm => cm.email.toLowerCase() === u.email.toLowerCase());
-                          return (
-                            <tr key={u.id} style={{ borderBottom: '1px solid var(--border-light)', background: idx % 2 === 0 ? 'transparent' : 'rgba(0,0,0,0.01)' }}>
-                              <td style={{ padding: '0.6rem 1rem' }}>
-                                <img src={u.photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.name || 'User')}&background=ff5500&color=fff`} alt={u.name} style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' }} />
-                              </td>
-                              <td style={{ padding: '0.85rem 1rem', fontWeight: 600 }}>{u.name}</td>
-                              <td style={{ padding: '0.85rem 1rem', color: 'var(--text-secondary)' }}>{u.email}</td>
-                              <td style={{ padding: '0.85rem 1rem' }}>Year {u.year || 1} CS</td>
-                              <td style={{ padding: '0.85rem 1rem', textTransform: 'capitalize', fontSize: '0.8rem', color: 'var(--text-muted)' }}>{u.role}</td>
-                              <td style={{ padding: '0.85rem 1rem' }}>
-                                {isCore ? (
-                                  <span style={{ background: 'rgba(16,185,129,0.12)', color: '#10b981', padding: '0.2rem 0.5rem', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 700 }}><i className="fa-solid fa-crown"></i> Core Member</span>
-                                ) : (
-                                  <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>No</span>
-                                )}
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                );
-              })()}
-            </div>
-          </Reveal>
-
-          {/* SECTION 2B: CORE BOARD BOARD MANAGER */}
-          <Reveal direction="up" delay="0.1s">
-            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: '2rem', alignItems: 'start' }}>
-              
-              {/* Core Board list */}
-              <div className="card" style={{ padding: '2rem' }}>
-                <h3 style={{ fontSize: '1.25rem', marginBottom: '1.5rem', fontWeight: 700 }}><i className="fa-solid fa-crown" style={{ color: 'var(--orange)' }}></i> Core Board Directory</h3>
-                {coreMembers.length === 0 ? (
-                  <p style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>No core board members added yet.</p>
-                ) : (
-                  <div style={{ overflowX: 'auto', border: '1px solid var(--border-light)', borderRadius: '12px' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.85rem' }}>
-                      <thead>
-                        <tr style={{ borderBottom: '1px solid var(--border-light)', background: 'rgba(0,0,0,0.02)' }}>
-                          <th style={{ padding: '0.75rem 1rem' }}>Photo</th>
-                          <th style={{ padding: '0.75rem 1rem' }}>Name</th>
-                          <th style={{ padding: '0.75rem 1rem' }}>Position</th>
-                          <th style={{ padding: '0.75rem 1rem' }}>Account</th>
-                          <th style={{ padding: '0.75rem 1rem' }}>Action</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {coreMembers.map(cm => {
-                          const isReg = users.some(u => u.email.toLowerCase() === cm.email.toLowerCase());
-                          return (
-                            <tr key={cm.id} style={{ borderBottom: '1px solid var(--border-light)' }}>
-                              <td style={{ padding: '0.5rem 1rem' }}>
-                                <img src={cm.photo} alt={cm.name} style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' }} />
-                              </td>
-                              <td style={{ padding: '0.75rem 1rem' }}>
-                                <strong>{cm.name}</strong>
-                                <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-muted)' }}>{cm.email}</span>
-                              </td>
-                              <td style={{ padding: '0.75rem 1rem' }}><span style={{ color: 'var(--orange)', fontWeight: 600 }}>{cm.role}</span> (Yr {cm.year})</td>
-                              <td style={{ padding: '0.75rem 1rem' }}>
-                                {isReg ? (
-                                  <span style={{ background: 'rgba(16,185,129,0.12)', color: '#10b981', padding: '0.15rem 0.4rem', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 700 }}><i className="fa-solid fa-circle-check"></i> Linked</span>
-                                ) : (
-                                  <span style={{ background: 'rgba(245,158,11,0.12)', color: '#f59e0b', padding: '0.15rem 0.4rem', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 700 }}><i className="fa-solid fa-circle-xmark"></i> Unregistered</span>
-                                )}
-                              </td>
-                              <td style={{ padding: '0.75rem 1rem' }}>
-                                <button onClick={() => handleDeleteCoreMember(cm.id, cm.name)} className="btn btn-danger btn-sm" style={{ padding: '0.2rem 0.4rem', borderRadius: '4px' }}><i className="fa-solid fa-trash-can"></i></button>
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
-
-              {/* Form to Add Core Board Member */}
-              <div className="card" style={{ padding: '2rem' }}>
-                <h3 style={{ fontSize: '1.25rem', marginBottom: '1.5rem', fontWeight: 700 }}><i className="fa-solid fa-user-plus" style={{ color: 'var(--orange)' }}></i> Add Core Member</h3>
-                <form onSubmit={handleAddCoreMember} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                  <div className="form-group">
-                    <label className="form-label" style={{ fontSize: '0.8rem' }}>Full Name</label>
-                    <input 
-                      type="text" 
-                      className="form-input" 
-                      required 
-                      value={coreForm.name} 
-                      onChange={(e) => handleFormChange(setCoreForm, 'name', e.target.value)} 
-                      placeholder="e.g. Athi"
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label" style={{ fontSize: '0.8rem' }}>Email Address (Mail ID)</label>
-                    <input 
-                      type="email" 
-                      className="form-input" 
-                      required 
-                      value={coreForm.email} 
-                      onChange={(e) => handleFormChange(setCoreForm, 'email', e.target.value)} 
-                      placeholder="e.g. athi9080@gmail.com"
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label" style={{ fontSize: '0.8rem' }}>Role / Position</label>
-                    <input 
-                      type="text" 
-                      className="form-input" 
-                      required 
-                      value={coreForm.role} 
-                      onChange={(e) => handleFormChange(setCoreForm, 'role', e.target.value)} 
-                      placeholder="e.g. President, Treasurer"
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label" style={{ fontSize: '0.8rem' }}>Academic Year</label>
-                    <select 
-                      className="form-input" 
-                      value={coreForm.year} 
-                      onChange={(e) => handleFormChange(setCoreForm, 'year', e.target.value)}
-                    >
-                      <option value="1">Year 1</option>
-                      <option value="2">Year 2</option>
-                      <option value="3">Year 3</option>
-                      <option value="4">Year 4</option>
-                    </select>
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label" style={{ fontSize: '0.8rem' }}>Avatar Photo URL / File Upload</label>
-                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                      <input 
-                        type="text" 
-                        className="form-input" 
-                        value={selectedFile ? selectedFile.name : coreForm.photo} 
-                        onChange={(e) => {
-                          if (!selectedFile) {
-                            handleFormChange(setCoreForm, 'photo', e.target.value);
-                          }
-                        }} 
-                        disabled={!!selectedFile}
-                        placeholder={selectedFile ? "Using selected local image..." : "https://..."} 
-                        style={{ flexGrow: 1 }}
-                      />
-                      <label className="btn btn-secondary btn-sm" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', margin: 0, padding: '0.4rem 0.8rem', borderRadius: '8px', fontSize: '0.8rem', gap: '0.25rem' }}>
-                        <i className="fa-solid fa-image"></i> {selectedFile ? 'Change' : 'Choose'}
-                        <input 
-                          type="file" 
-                          accept="image/*" 
-                          style={{ display: 'none' }} 
-                          onChange={(e) => {
-                            if (e.target.files.length > 0) {
-                              setSelectedFile(e.target.files[0]);
-                              window.showToast('Image Selected', `Local image loaded: ${e.target.files[0].name}`, 'info');
-                            }
-                          }} 
-                        />
-                      </label>
-                      {selectedFile && (
-                        <button 
-                          type="button" 
-                          className="btn btn-secondary btn-sm" 
-                          onClick={() => setSelectedFile(null)} 
-                          style={{ padding: '0.4rem 0.6rem', color: '#ef4444' }}
-                          title="Clear selected file"
-                        >
-                          <i className="fa-solid fa-trash-can"></i>
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  <div style={{ borderTop: '1px dashed var(--border-light)', paddingTop: '1rem', marginTop: '0.5rem' }}>
-                    <h5 style={{ fontSize: '0.85rem', color: 'var(--orange)', marginBottom: '0.75rem' }}>Social Networks Profiles</h5>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-                      <input type="url" className="form-input" value={coreForm.linkedin} onChange={(e) => handleFormChange(setCoreForm, 'linkedin', e.target.value)} placeholder="LinkedIn Link" />
-                      <input type="url" className="form-input" value={coreForm.instagram} onChange={(e) => handleFormChange(setCoreForm, 'instagram', e.target.value)} placeholder="Instagram Link" />
-                      <input type="url" className="form-input" value={coreForm.github} onChange={(e) => handleFormChange(setCoreForm, 'github', e.target.value)} placeholder="GitHub Link" />
-                      <input type="url" className="form-input" value={coreForm.portfolio} onChange={(e) => handleFormChange(setCoreForm, 'portfolio', e.target.value)} placeholder="Portfolio URL Link" />
-                    </div>
-                  </div>
-
-                  <button type="submit" className="btn btn-primary" style={{ marginTop: '1rem', justifyContent: 'center' }}><i className="fa-solid fa-circle-plus"></i> Save Core Member</button>
-                </form>
-              </div>
-
-            </div>
-          </Reveal>
-        </div>
-      )}
-
-      {/* TAB 3: SETTINGS (MOVED FROM SETTINGS PAGE) */}
-      {activeTab === 'settings' && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '2rem' }}>
-          {/* Section 1: Update details */}
-          <div className="card" style={{ gridColumn: 'span 2', padding: '2rem' }}>
-            <div className="profile-heading" style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', marginBottom: '2.5rem', paddingBottom: '1.5rem', borderBottom: '1px solid var(--border-light)' }}>
-              <img 
-                src={formData.photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(formData.name || 'User')}&background=ff5500&color=fff`} 
-                alt="Profile" 
-                style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--orange)' }}
-              />
-              <div>
-                <h3 style={{ fontSize: '1.25rem', fontWeight: 700 }}>{user.name}</h3>
-                <span style={{ fontSize: '0.85rem', color: 'var(--orange)', fontWeight: 600, textTransform: 'uppercase' }}>{user.role}</span>
-              </div>
-            </div>
-
-            <form onSubmit={handleProfileSubmit}>
-              <h3 style={{ fontSize: '1.25rem', marginBottom: '1.5rem', fontFamily: 'var(--font-display)' }}><i className="fa-solid fa-user-pen" style={{ color: 'var(--orange)' }}></i> Directory Information</h3>
-              
-              <div className="form-grid-layout" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.5rem' }}>
-                <div className="form-group">
-                  <label className="form-label" htmlFor="name">Display Name</label>
-                  <input type="text" className="form-input" id="name" required value={formData.name} onChange={handleSettingsChange} />
-                </div>
-                <div className="form-group">
-                  <label className="form-label" htmlFor="photo">Photo Avatar Link / Upload</label>
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <input type="text" className="form-input" id="photo" required value={formData.photo} onChange={handleSettingsChange} style={{ flexGrow: 1 }} />
-                    <label className="btn btn-secondary btn-sm" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', margin: 0, padding: '0.4rem 0.8rem', borderRadius: '8px', fontSize: '0.8rem', gap: '0.25rem' }}>
-                      <i className="fa-solid fa-cloud-arrow-up"></i> Upload
-                      <input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => handleImageUpload(e, 'photo', setFormData)} />
-                    </label>
-                  </div>
-                </div>
-                <div className="form-group">
-                  <label className="form-label" htmlFor="year">Academic Year</label>
-                  <select className="form-input" id="year" value={formData.year} onChange={handleSettingsChange}>
-                    <option value="1">Year 1</option>
-                    <option value="2">Year 2</option>
-                    <option value="3">Year 3</option>
-                    <option value="4">Year 4</option>
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label className="form-label" htmlFor="linkedin">LinkedIn Profile Link</label>
-                  <input type="url" className="form-input" id="linkedin" value={formData.linkedin} onChange={handleSettingsChange} placeholder="https://linkedin.com/in/..." />
-                </div>
-                <div className="form-group">
-                  <label className="form-label" htmlFor="github">GitHub Profile Link</label>
-                  <input type="url" className="form-input" id="github" value={formData.github} onChange={handleSettingsChange} placeholder="https://github.com/..." />
-                </div>
-                <div className="form-group" style={{ gridColumn: 'span 2' }}>
-                  <label className="form-label" htmlFor="skills">Skills (Comma separated list)</label>
-                  <input type="text" className="form-input" id="skills" value={formData.skills} onChange={handleSettingsChange} placeholder="React, Python, Figma..." />
-                </div>
-              </div>
-
-              <button type="submit" className="btn btn-primary" style={{ marginTop: '1.5rem', width: '100%', justifyContent: 'center', borderRadius: '8px' }}>
-                Save Directory Changes <i className="fa-solid fa-save" style={{ marginLeft: '0.4rem' }}></i>
-              </button>
-            </form>
+            ))}
           </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
-          {/* Side Preferences Panels */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-            {/* Preferences & Alerts */}
-            <div className="card" style={{ padding: '2rem' }}>
-              <h3 style={{ fontSize: '1.25rem', marginBottom: '1.5rem', fontFamily: 'var(--font-display)' }}><i className="fa-solid fa-sliders" style={{ color: 'var(--orange)' }}></i> Preferences & Alerts</h3>
-              
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                <div className="form-group">
-                  <label className="form-label" htmlFor="lang">Language Preference</label>
-                  <select 
-                    className="form-input" 
-                    id="lang"
-                    value={systemSettings.language}
-                    onChange={(e) => setSystemSettings(prev => ({ ...prev, language: e.target.value }))}
-                  >
-                    <option value="en">English (US)</option>
-                    <option value="es">Español</option>
-                    <option value="fr">Français</option>
-                  </select>
+/* ═══════════════════════════════════ ANNOUNCEMENTS TAB ═══════════════════════════════════ */
+function AnnouncementsTab() {
+  const [list, setList] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [form, setForm] = useState({ title: '', content: '', important: false });
+  const [saving, setSaving] = useState(false);
+
+  const load = async () => {
+    try { setList(await db.find('Announcements')); }
+    catch { window.showToast('Error', 'Could not load announcements.', 'error'); }
+    finally { setLoading(false); }
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const handleAdd = async () => {
+    if (!form.title || !form.content) { window.showToast('Missing Fields', 'Title and content are required.', 'error'); return; }
+    setSaving(true);
+    try {
+      await db.insert('Announcements', { ...form, createdAt: new Date().toISOString() });
+      window.showToast('Posted!', form.title, 'success');
+      setForm({ title: '', content: '', important: false });
+      load();
+    } catch (err) { window.showToast('Error', err.message, 'error'); }
+    finally { setSaving(false); }
+  };
+
+  const handleDelete = async (id, title) => {
+    if (!window.confirm(`Delete: ${title}?`)) return;
+    try { await db.delete('Announcements', id); setList(prev => prev.filter(a => a.id !== id)); window.showToast('Deleted', title, 'success'); }
+    catch (err) { window.showToast('Error', err.message, 'error'); }
+  };
+
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.4fr', gap: '1.5rem' }}>
+      <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14, padding: '1.5rem' }}>
+        <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1.25rem', color: 'var(--text)' }}>
+          <i className="fa-solid fa-bullhorn" style={{ color: 'var(--orange)', marginRight: '0.5rem' }} />New Announcement
+        </h3>
+        <input value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} placeholder="Title *"
+          style={{ width: '100%', padding: '0.65rem 0.9rem', border: '1px solid var(--border)', borderRadius: 8, fontSize: '0.88rem', color: 'var(--text)', background: 'var(--surface)', marginBottom: '0.65rem' }} />
+        <textarea value={form.content} onChange={e => setForm(p => ({ ...p, content: e.target.value }))} placeholder="Content *" rows={4}
+          style={{ width: '100%', padding: '0.65rem 0.9rem', border: '1px solid var(--border)', borderRadius: 8, fontSize: '0.88rem', color: 'var(--text)', background: 'var(--surface)', marginBottom: '0.75rem', resize: 'vertical' }} />
+        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.88rem', cursor: 'pointer', marginBottom: '0.9rem', color: 'var(--text-secondary)' }}>
+          <input type="checkbox" checked={form.important} onChange={e => setForm(p => ({ ...p, important: e.target.checked }))} style={{ accentColor: 'var(--orange)', width: 16, height: 16 }} />
+          Mark as Important
+        </label>
+        <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }} onClick={handleAdd} disabled={saving}>
+          {saving ? <><i className="fa-solid fa-spinner fa-spin" /> Posting…</> : <><i className="fa-solid fa-paper-plane" /> Post Announcement</>}
+        </button>
+      </div>
+
+      <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden' }}>
+        <div style={{ padding: '0.9rem 1.2rem', borderBottom: '1px solid var(--border)', fontWeight: 700, fontSize: '0.88rem' }}>All Announcements</div>
+        {loading ? <div className="loading-spinner" /> : (
+          <div style={{ padding: '0.75rem', maxHeight: 460, overflowY: 'auto' }}>
+            {list.length === 0 ? <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>No announcements yet.</div> : list.map(a => (
+              <div key={a.id} style={{ padding: '0.85rem', borderRadius: 10, borderLeft: `3px solid ${a.important ? 'var(--orange)' : 'var(--border)'}`, background: a.important ? 'rgba(255,85,0,0.03)' : 'transparent', marginBottom: '0.5rem', display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem' }}>
+                    <span style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text)' }}>{a.title}</span>
+                    {a.important && <Badge color="orange">Important</Badge>}
+                  </div>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>{a.content}</div>
                 </div>
-                <div className="form-group">
-                  <label className="form-label" htmlFor="notif">Email Alert Status</label>
-                  <select 
-                    className="form-input" 
-                    id="notif"
-                    value={systemSettings.notifications}
-                    onChange={(e) => setSystemSettings(prev => ({ ...prev, notifications: e.target.value }))}
-                  >
-                    <option value="all">Deliver all notifications</option>
-                    <option value="urgent">Only urgent announcements</option>
-                    <option value="none">Mute email updates</option>
-                  </select>
-                </div>
+                <button onClick={() => handleDelete(a.id, a.title)} style={{ background: '#fee2e2', border: 'none', borderRadius: 7, width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#dc2626', fontSize: '0.78rem', flexShrink: 0 }}>
+                  <i className="fa-solid fa-trash" />
+                </button>
               </div>
-              <button onClick={handleSaveSystemSettings} className="btn btn-secondary" style={{ marginTop: '1.5rem', width: '100%', justifyContent: 'center', borderRadius: '8px' }}>
-                Save Preferences <i className="fa-solid fa-circle-check" style={{ marginLeft: '0.4rem' }}></i>
-              </button>
-            </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
-            {/* Danger Zone */}
-            <div className="card" style={{ border: '1px solid rgba(239, 68, 68, 0.3)', padding: '2rem' }}>
-              <h3 style={{ fontSize: '1.25rem', marginBottom: '1rem', color: '#ef4444', fontFamily: 'var(--font-display)' }}><i className="fa-solid fa-triangle-exclamation"></i> Danger Zone</h3>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1.5rem', lineHeight: '1.5' }}>Permanently delete your profile metadata, completed quiz histories, and file submissions from Mindcraft AI registry vaults. This action cannot be undone.</p>
-              <button onClick={handleDeleteAccount} className="btn btn-danger" style={{ width: '100%', justifyContent: 'center', borderRadius: '8px' }}>
-                Purge Account Registry <i className="fa-solid fa-trash-can" style={{ marginLeft: '0.4rem' }}></i>
-              </button>
-            </div>
+/* ═══════════════════════════════════ MAIN ADMIN PAGE ═══════════════════════════════════ */
+export default function Admin({ user }) {
+  const [tab, setTab] = useState('members');
+  const [members, setMembers] = useState([]);
+  const [stats, setStats] = useState({ members: 0, core: 0, events: 0, announcements: 0 });
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const [m, c, e, a] = await Promise.all([
+          db.find('Users'), db.find('CoreMembers'), db.find('Events'), db.find('Announcements')
+        ]);
+        setMembers(m);
+        setStats({ members: m.length, core: c.length, events: e.length, announcements: a.length });
+      } catch { /* ignore */ }
+    })();
+  }, []);
+
+  const statCards = [
+    { label: 'Total Members', value: stats.members, icon: 'fa-users',      color: '#3b82f6' },
+    { label: 'Core Board',    value: stats.core,    icon: 'fa-star',       color: '#f59e0b' },
+    { label: 'Events',        value: stats.events,  icon: 'fa-calendar',   color: '#10b981' },
+    { label: 'Announcements', value: stats.announcements, icon: 'fa-bullhorn', color: 'var(--orange)' },
+  ];
+
+  return (
+    <div>
+      {/* Header */}
+      <div style={{ marginBottom: '2rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.4rem' }}>
+          <div style={{ width: 38, height: 38, borderRadius: 10, background: 'rgba(255,85,0,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <i className="fa-solid fa-crown" style={{ color: 'var(--orange)', fontSize: '1rem' }} />
+          </div>
+          <div>
+            <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text)', margin: 0 }}>Admin Panel</h1>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0 }}>Welcome back, {user?.name || 'Admin'}</p>
           </div>
         </div>
-      )}
+      </div>
+
+      {/* Stat Cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
+        {statCards.map(s => (
+          <div key={s.label} style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14, padding: '1.25rem', transition: 'transform 0.2s, box-shadow 0.2s' }}
+            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = 'var(--shadow-md)'; }}
+            onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none'; }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+              <div style={{ width: 34, height: 34, borderRadius: 8, background: `${s.color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <i className={`fa-solid ${s.icon}`} style={{ color: s.color, fontSize: '0.9rem' }} />
+              </div>
+            </div>
+            <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--text)', lineHeight: 1 }}>{s.value}</div>
+            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.25rem', fontWeight: 500 }}>{s.label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Tabs */}
+      <div style={{ display: 'flex', gap: '0.35rem', marginBottom: '1.5rem', background: 'var(--surface)', padding: '0.3rem', borderRadius: 12, border: '1px solid var(--border)', width: 'fit-content', flexWrap: 'wrap' }}>
+        {TABS.map(t => (
+          <button key={t.id} onClick={() => setTab(t.id)}
+            style={{ padding: '0.5rem 1.1rem', borderRadius: 9, fontSize: '0.84rem', fontWeight: 600, border: 'none', cursor: 'pointer', transition: 'all 0.22s', display: 'flex', alignItems: 'center', gap: '0.4rem',
+              background: tab === t.id ? 'var(--orange)' : 'transparent',
+              color: tab === t.id ? '#fff' : 'var(--text-secondary)',
+              boxShadow: tab === t.id ? '0 2px 8px rgba(255,85,0,0.25)' : 'none',
+            }}
+          >
+            <i className={`fa-solid ${t.icon}`} style={{ fontSize: '0.82rem' }} />
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Tab Content */}
+      {tab === 'members'       && <MembersTab />}
+      {tab === 'core'          && <CoreBoardTab allMembers={members} />}
+      {tab === 'events'        && <EventsTab />}
+      {tab === 'announcements' && <AnnouncementsTab />}
     </div>
   );
 }
