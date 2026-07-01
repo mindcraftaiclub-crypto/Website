@@ -8,14 +8,8 @@ export default function Header({ user }) {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isMoreOpen, setIsMoreOpen] = useState(false);
-  const [searchValue, setSearchValue] = useState('');
   const profileRef = useRef(null);
   const moreRef = useRef(null);
-
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    setSearchValue(params.get('search') || '');
-  }, [location]);
 
 
 
@@ -28,14 +22,7 @@ export default function Header({ user }) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleSearchKeyPress = (e) => {
-    if (e.key === 'Enter') {
-      const query = searchValue.trim();
-      navigate(query ? `/projects?search=${encodeURIComponent(query)}` : '/projects');
-      setIsMobileOpen(false);
-      setIsMoreOpen(false);
-    }
-  };
+
 
   const handleLogout = async () => {
     try {
@@ -109,12 +96,7 @@ export default function Header({ user }) {
       </nav>
 
       <div className="header-actions">
-        {location.pathname !== '/' && (
-          <div className="header-search-container">
-            <i className="fa-solid fa-magnifying-glass"></i>
-            <input type="text" className="header-search-input" placeholder="Search..." value={searchValue} onChange={(e) => setSearchValue(e.target.value)} onKeyDown={handleSearchKeyPress} />
-          </div>
-        )}
+
 
 
 
