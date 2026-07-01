@@ -3,7 +3,6 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import db from './db';
 import Header from './components/Header';
 import Toast from './components/Toast';
-import RobotCompanion from './components/RobotCompanion';
 
 import Home from './pages/Home';
 import Members from './pages/Members';
@@ -91,7 +90,6 @@ export default function App() {
           <Toast key={toast.id} id={toast.id} title={toast.title} message={toast.message} type={toast.type} onClose={removeToast} />
         ))}
       </div>
-      <RobotCompanion />
     </div>
   );
 }
