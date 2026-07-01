@@ -45,7 +45,6 @@ export default function Header({ user }) {
     { to: '/quiz', label: 'Quiz', icon: 'fa-brain' },
     { to: '/tasks', label: 'Tasks', icon: 'fa-square-check' },
     { to: '/winners', label: 'Winners', icon: 'fa-trophy' },
-    ...(!user ? [{ to: '/join', label: 'Join', icon: 'fa-hand-fist' }] : []),
     { to: '/contact', label: 'Contact', icon: 'fa-phone' },
   ];
 
@@ -54,7 +53,6 @@ export default function Header({ user }) {
     { to: '/members', label: 'Members', icon: 'fa-users' },
     { to: '/projects', label: 'Projects', icon: 'fa-briefcase' },
     { to: '/events', label: 'Events', icon: 'fa-calendar-days' },
-    ...(!user ? [{ to: '/join', label: 'Join', icon: 'fa-hand-fist' }] : []),
     { to: '/contact', label: 'Contact', icon: 'fa-phone' },
   ];
 
