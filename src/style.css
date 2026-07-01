@@ -1,47 +1,47 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Syne:wght@700;800&family=Outfit:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap');
 
 /* ═══════════════════════════════════════════
-   DESIGN TOKENS — PROFESSIONAL DARK MODE
+   DESIGN TOKENS — PROFESSIONAL WHITE MODE
 ═══════════════════════════════════════════ */
 :root {
   /* Backgrounds */
-  --bg:          #08090c;
-  --bg-2:        #0d0f14;
-  --bg-3:        #12151d;
-  --surface:     #161920;
-  --surface-2:   #1c2030;
-  --card:        #13161f;
-  --card-hover:  #181c28;
+  --bg:          #ffffff;
+  --bg-2:        #f8f9fb;
+  --bg-3:        #f2f4f7;
+  --surface:     #f5f6f9;
+  --surface-2:   #eef0f4;
+  --card:        #ffffff;
+  --card-hover:  #fafbfc;
 
   /* Borders */
-  --border:       rgba(255,255,255,0.07);
-  --border-light: rgba(255,255,255,0.04);
-  --border-hover: rgba(255,255,255,0.14);
+  --border:       #e2e5ec;
+  --border-light: #eceef3;
+  --border-hover: #c8ccda;
 
   /* Text */
-  --text:          #f0f2f8;
-  --text-secondary:#9aa0b8;
-  --text-muted:    #5c627a;
+  --text:          #0f1117;
+  --text-secondary:#4a5068;
+  --text-muted:    #9298ac;
 
   /* Brand */
-  --orange:        #ff6b35;
-  --orange-rgb:    255, 107, 53;
-  --orange-light:  #ff8c5a;
-  --orange-dark:   #e85520;
-  --orange-glow:   rgba(255,107,53,0.18);
+  --orange:        #ff5500;
+  --orange-rgb:    255, 85, 0;
+  --orange-light:  #ff7733;
+  --orange-dark:   #e04a00;
+  --orange-glow:   rgba(255,85,0,0.12);
 
   /* Accent gradients */
-  --grad-brand:   linear-gradient(135deg, #ff6b35 0%, #ff3d7f 100%);
-  --grad-subtle:  linear-gradient(135deg, rgba(255,107,53,0.12) 0%, rgba(255,61,127,0.06) 100%);
-  --grad-card:    linear-gradient(145deg, #161920 0%, #12151d 100%);
-  --grad-glow:    radial-gradient(ellipse at 50% 0%, rgba(255,107,53,0.15) 0%, transparent 65%);
+  --grad-brand:   linear-gradient(135deg, #ff5500 0%, #ff3d7f 100%);
+  --grad-subtle:  linear-gradient(135deg, rgba(255,85,0,0.06) 0%, rgba(255,61,127,0.03) 100%);
+  --grad-card:    linear-gradient(145deg, #ffffff 0%, #f8f9fb 100%);
+  --grad-glow:    radial-gradient(ellipse at 50% 0%, rgba(255,85,0,0.07) 0%, transparent 65%);
 
   /* Shadows */
-  --shadow-sm:   0 1px 4px rgba(0,0,0,0.4);
-  --shadow-md:   0 4px 20px rgba(0,0,0,0.5), 0 1px 4px rgba(0,0,0,0.3);
-  --shadow-lg:   0 12px 40px rgba(0,0,0,0.6), 0 4px 12px rgba(0,0,0,0.4);
-  --shadow-xl:   0 24px 60px rgba(0,0,0,0.7), 0 8px 20px rgba(0,0,0,0.5);
-  --shadow-brand: 0 4px 24px rgba(255,107,53,0.28);
+  --shadow-sm:   0 1px 4px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md:   0 4px 16px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.04);
+  --shadow-lg:   0 10px 36px rgba(0,0,0,0.10), 0 4px 10px rgba(0,0,0,0.05);
+  --shadow-xl:   0 20px 60px rgba(0,0,0,0.12), 0 8px 20px rgba(0,0,0,0.06);
+  --shadow-brand: 0 4px 20px rgba(255,85,0,0.22);
 
   /* Radius */
   --radius-sm:  8px;
@@ -50,9 +50,9 @@
   --radius-xl:  28px;
 
   /* Fonts */
-  --font-body:    'Inter', sans-serif;
-  --font-display: 'Syne', sans-serif;
-  --font-ui:      'Outfit', sans-serif;
+  --font-body:    'Poppins', sans-serif;
+  --font-display: 'Poppins', sans-serif;
+  --font-ui:      'Poppins', sans-serif;
 
   /* Motion */
   --transition:      0.28s cubic-bezier(0.16, 1, 0.3, 1);
@@ -93,7 +93,7 @@ input, textarea, select { font-family: inherit; outline: none; }
 
 ::-webkit-scrollbar { width: 5px; }
 ::-webkit-scrollbar-track { background: var(--bg-2); }
-::-webkit-scrollbar-thumb { background: var(--surface-2); border-radius: 20px; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 20px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--orange); }
 
 h1, h2, h3, h4 {
@@ -135,8 +135,8 @@ h1, h2, h3, h4 {
   left: 0;
   right: 0;
   height: var(--header-height);
-  background: rgba(8, 9, 12, 0.85);
-  border-bottom: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.92);
+  border-bottom: 1px solid var(--border-light);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -196,7 +196,7 @@ h1, h2, h3, h4 {
 
 .nav-link-top:hover {
   color: var(--text);
-  background: rgba(255,255,255,0.06);
+  background: rgba(0,0,0,0.05);
 }
 
 .nav-link-top.active {
@@ -225,7 +225,7 @@ h1, h2, h3, h4 {
 .more-trigger:hover,
 .more-trigger.active {
   color: var(--text);
-  background: rgba(255,255,255,0.06);
+  background: rgba(0,0,0,0.05);
 }
 
 .more-dropdown-menu {
@@ -319,7 +319,7 @@ h1, h2, h3, h4 {
 
 .header-action-btn:hover {
   color: var(--text);
-  background: rgba(255,255,255,0.07);
+  background: rgba(0,0,0,0.05);
 }
 
 .notification-bell { position: relative; }
@@ -407,8 +407,8 @@ h1, h2, h3, h4 {
 }
 
 .logout-btn:hover {
-  color: #f87171;
-  background: rgba(248,113,113,0.07);
+  color: #dc2626;
+  background: rgba(220,38,38,0.06);
 }
 
 .header-signin-btn { gap: 0.4rem; }
@@ -509,15 +509,14 @@ h1, h2, h3, h4 {
 .btn-primary:active { transform: translateY(0); }
 
 .btn-secondary {
-  background: rgba(255,255,255,0.05);
+  background: var(--bg-2);
   color: var(--text);
   border-color: var(--border);
-  backdrop-filter: blur(8px);
 }
 
 .btn-secondary:hover {
   border-color: var(--border-hover);
-  background: rgba(255,255,255,0.09);
+  background: var(--surface-2);
   transform: translateY(-1px);
 }
 
@@ -691,7 +690,7 @@ h1, h2, h3, h4 {
 .loading-spinner {
   width: 30px;
   height: 30px;
-  border: 2.5px solid rgba(255,255,255,0.08);
+  border: 2.5px solid var(--border);
   border-top-color: var(--orange);
   border-radius: 50%;
   animation: spin 0.65s linear infinite;
@@ -757,8 +756,8 @@ h1, h2, h3, h4 {
 .toast-title { font-size: 0.84rem; font-weight: 700; color: var(--text); }
 .toast-message { font-size: 0.76rem; color: var(--text-secondary); margin-top: 0.1rem; }
 .toast-close { color: var(--text-muted); cursor: pointer; font-size: 0.82rem; padding: 0; }
-.toast.success .toast-icon { color: #4ade80; }
-.toast.error .toast-icon   { color: #f87171; }
+.toast.success .toast-icon { color: #16a34a; }
+.toast.error .toast-icon   { color: #dc2626; }
 .toast.info .toast-icon    { color: var(--orange); }
 
 @keyframes toast-in {

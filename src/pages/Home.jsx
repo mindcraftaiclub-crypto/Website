@@ -158,7 +158,7 @@ export default function Home() {
         position: 'relative', minHeight: '92vh',
         display: 'flex', alignItems: 'center',
         overflow: 'hidden', padding: '5rem 0 3rem',
-        background: 'linear-gradient(180deg, rgba(255,107,53,0.04) 0%, transparent 60%)',
+        background: 'linear-gradient(180deg, rgba(255,85,0,0.03) 0%, transparent 60%)',
       }}>
         <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}>
           {/* Blob 1 Wrapper (Mouse Follow) */}
@@ -370,7 +370,7 @@ export default function Home() {
 
         <TiltCard tiltDegree={5}>
           <div style={{
-            background: 'var(--surface-2)', border: '1px solid var(--border)',
+            background: 'var(--surface)', border: '1px solid var(--border)',
             borderRadius: 'var(--radius-lg)', padding: '2rem',
             minHeight: 340, display: 'flex', flexDirection: 'column',
             position: 'relative', overflow: 'hidden',
