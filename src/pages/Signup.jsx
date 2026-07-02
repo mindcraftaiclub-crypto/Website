@@ -2,8 +2,19 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import db from '../db';
 
+/* ─── Field-to-animation config ─── */
+const FIELD_CONFIG = {
+  name:           { emoji: '👤', label: 'Full Name',      color: '#ff6b35', msg: 'Tell us who you are — your name is the start of your story.' },
+  className:      { emoji: '🎓', label: 'Your Class',     color: '#8b5cf6', msg: 'Where are you studying? Let the learning community find you!' },
+  registerNumber: { emoji: '🪪', label: 'Register No.',   color: '#0ea5e9', msg: 'Your unique student ID — makes you official in Mindcraft.' },
+  phone:          { emoji: '📱', label: 'Phone Number',   color: '#10b981', msg: "We'll only reach out when it really matters. Promise!" },
+  email:          { emoji: '✉️', label: 'Email Address',  color: '#f59e0b', msg: 'Your inbox is your gateway to events, workshops, and updates.' },
+  password:       { emoji: '🔐', label: 'Password',       color: '#ef4444', msg: 'Make it strong — uppercase, digits, symbols. You got this.' },
+  interestedArea: { emoji: '🧠', label: 'Interested Area',color: '#6366f1', msg: 'NLP? Vision? RL? Shout out your AI passion and find your tribe.' },
+};
+
 /* ─── Modern card input with left icon ─── */
-const CardInput = ({ type = 'text', id, placeholder, value, onChange, icon, required = false, minLength, children, style = {} }) => (
+const CardInput = ({ type = 'text', id, placeholder, value, onChange, icon, required = false, minLength, onFocus, onBlur, children, style = {} }) => (
   <div style={{
     display: 'flex',
     alignItems: 'center',
@@ -19,11 +30,13 @@ const CardInput = ({ type = 'text', id, placeholder, value, onChange, icon, requ
     e.currentTarget.style.background = '#fff';
     e.currentTarget.style.borderColor = 'var(--orange)';
     e.currentTarget.style.boxShadow = '0 0 0 4px var(--orange-glow)';
+    if (onFocus) onFocus();
   }}
   onBlurCapture={e => {
     e.currentTarget.style.background = '#f3f4f6';
     e.currentTarget.style.borderColor = 'transparent';
     e.currentTarget.style.boxShadow = 'none';
+    if (onBlur) onBlur();
   }}
   >
     {icon && <i className={icon} style={{ color: '#6b7280', marginRight: '0.75rem', fontSize: '0.92rem' }} />}
@@ -57,6 +70,20 @@ export default function Signup({ user }) {
   const [agreed, setAgreed]   = useState(false);
   const [showPw, setShowPw]   = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
+  const [coords, setCoords]     = useState({ x: 0, y: 0 });
+  const [activeField, setActiveField] = useState(null);
+
+  const handleMouseMove = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    setCoords({ x, y });
+  };
+
+  const focusField  = (field) => setActiveField(field);
+  const blurField   = () => setActiveField(null);
+
+  const activeCfg = activeField ? FIELD_CONFIG[activeField] : null;
 
   const [form, setForm] = useState({
     name: '', email: '', password: '',
@@ -116,16 +143,29 @@ export default function Signup({ user }) {
       }}>
 
         {/* ══════ LEFT — vibrant orange panel ══════ */}
-        <div style={{
-          background: 'linear-gradient(135deg, #ff5500 0%, #ff8833 100%)',
-          padding: '3.5rem 2.8rem',
-          display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
-          color: '#fff',
-          position: 'relative',
-          overflow: 'hidden',
-          zIndex: 1
-        }}>
-          {/* Floating Spheres */}
+        <div 
+          onMouseMove={handleMouseMove}
+          style={{
+            background: 'linear-gradient(135deg, #ff5500 0%, #ff8833 100%)',
+            padding: '3.5rem 2.8rem',
+            display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+            color: '#fff',
+            position: 'relative',
+            overflow: 'hidden',
+            cursor: 'default',
+            zIndex: 1
+          }}
+        >
+          {/* Spotlight Glow Overlay */}
+          <div style={{
+            position: 'absolute',
+            top: 0, left: 0, right: 0, bottom: 0,
+            background: `radial-gradient(circle 220px at ${coords.x}px ${coords.y}px, rgba(255, 255, 255, 0.16) 0%, transparent 80%)`,
+            pointerEvents: 'none',
+            zIndex: 1
+          }} />
+
+          {/* Floating Spheres with Parallax */}
           <div style={{
             position: 'absolute',
             width: '280px',
@@ -135,6 +175,8 @@ export default function Signup({ user }) {
             borderRadius: '50%',
             background: 'linear-gradient(135deg, #ff8833 0%, #ff5500 100%)',
             boxShadow: 'inset -25px -25px 60px rgba(0,0,0,0.4), 10px 10px 40px rgba(0,0,0,0.15)',
+            transform: `translate(${coords.x * -0.04}px, ${coords.y * -0.04}px)`,
+            transition: 'transform 0.12s ease-out',
             zIndex: 0,
             opacity: 0.8
           }} />
@@ -147,6 +189,8 @@ export default function Signup({ user }) {
             borderRadius: '50%',
             background: 'linear-gradient(135deg, #ff5500 0%, #cc3300 100%)',
             boxShadow: 'inset -15px -15px 40px rgba(0,0,0,0.3), 10px 10px 30px rgba(0,0,0,0.1)',
+            transform: `translate(${coords.x * 0.03}px, ${coords.y * 0.03}px)`,
+            transition: 'transform 0.12s ease-out',
             zIndex: 0,
             opacity: 0.9
           }} />
@@ -159,9 +203,93 @@ export default function Signup({ user }) {
             borderRadius: '50%',
             background: 'linear-gradient(135deg, #ffaa66 0%, #ff5500 100%)',
             boxShadow: 'inset -15px -15px 35px rgba(0,0,0,0.35), 5px 15px 30px rgba(0,0,0,0.15)',
+            transform: `translate(${coords.x * -0.02}px, ${coords.y * -0.02}px)`,
+            transition: 'transform 0.12s ease-out',
             zIndex: 0,
             opacity: 0.95
           }} />
+
+          {/* ── Animated Field Hint Card ── */}
+          <style>{`
+            @keyframes fadeSlideUp {
+              from { opacity: 0; transform: translateY(20px) scale(0.95); }
+              to   { opacity: 1; transform: translateY(0) scale(1); }
+            }
+            @keyframes pulseDot {
+              0%, 100% { transform: scale(1); opacity: 0.8; }
+              50% { transform: scale(1.3); opacity: 1; }
+            }
+            @keyframes emojiFloat {
+              0%, 100% { transform: translateY(0); }
+              50% { transform: translateY(-6px); }
+            }
+          `}</style>
+          <div style={{
+            position: 'relative',
+            zIndex: 2,
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+            {activeCfg ? (
+              <div key={activeField} style={{
+                animation: 'fadeSlideUp 0.35s cubic-bezier(0.16,1,0.3,1) forwards',
+                background: 'rgba(255,255,255,0.12)',
+                backdropFilter: 'blur(12px)',
+                border: `1.5px solid rgba(255,255,255,0.25)`,
+                borderRadius: '20px',
+                padding: '1.8rem 2rem',
+                textAlign: 'center',
+                maxWidth: '260px',
+                boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
+              }}>
+                <div style={{
+                  fontSize: '3.2rem',
+                  animation: 'emojiFloat 2s ease-in-out infinite',
+                  display: 'inline-block',
+                  marginBottom: '0.8rem',
+                }}>
+                  {activeCfg.emoji}
+                </div>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.4rem',
+                  marginBottom: '0.6rem',
+                }}>
+                  <span style={{
+                    width: '8px', height: '8px', borderRadius: '50%',
+                    background: activeCfg.color,
+                    animation: 'pulseDot 1.2s ease-in-out infinite',
+                    display: 'inline-block',
+                    boxShadow: `0 0 8px ${activeCfg.color}`,
+                  }} />
+                  <span style={{
+                    fontSize: '0.75rem', fontWeight: 800, color: '#fff',
+                    textTransform: 'uppercase', letterSpacing: '0.08em',
+                  }}>{activeCfg.label}</span>
+                </div>
+                <p style={{
+                  fontSize: '0.83rem',
+                  color: 'rgba(255,255,255,0.88)',
+                  lineHeight: 1.55,
+                  margin: 0,
+                  fontWeight: 400,
+                }}>{activeCfg.msg}</p>
+              </div>
+            ) : (
+              <div style={{
+                textAlign: 'center',
+                color: 'rgba(255,255,255,0.55)',
+                fontSize: '0.82rem',
+              }}>
+                <div style={{ fontSize: '2.5rem', marginBottom: '0.6rem' }}>✨</div>
+                <p style={{ margin: 0, fontWeight: 500 }}>Click any field to<br />see a hint here</p>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* ══════ RIGHT — white form panel ══════ */}
@@ -184,17 +312,17 @@ export default function Signup({ user }) {
             <form onSubmit={handleSignUp} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               {/* Grid row 1 */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <CardInput id="name" placeholder="Full Name *" value={form.name} onChange={set('name')} icon="fa-solid fa-user" required />
-                <CardInput id="className" placeholder="Class *" value={form.className} onChange={set('className')} icon="fa-solid fa-chalkboard" required />
+                <CardInput id="name" placeholder="Full Name *" value={form.name} onChange={set('name')} icon="fa-solid fa-user" required onFocus={() => focusField('name')} onBlur={blurField} />
+                <CardInput id="className" placeholder="Class *" value={form.className} onChange={set('className')} icon="fa-solid fa-chalkboard" required onFocus={() => focusField('className')} onBlur={blurField} />
               </div>
 
               {/* Grid row 2 */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <CardInput id="registerNumber" placeholder="Register Number *" value={form.registerNumber} onChange={set('registerNumber')} icon="fa-solid fa-id-card" required />
-                <CardInput type="tel" id="phone" placeholder="Phone Number *" value={form.phone} onChange={set('phone')} icon="fa-solid fa-phone" required />
+                <CardInput id="registerNumber" placeholder="Register Number *" value={form.registerNumber} onChange={set('registerNumber')} icon="fa-solid fa-id-card" required onFocus={() => focusField('registerNumber')} onBlur={blurField} />
+                <CardInput type="tel" id="phone" placeholder="Phone Number *" value={form.phone} onChange={set('phone')} icon="fa-solid fa-phone" required onFocus={() => focusField('phone')} onBlur={blurField} />
               </div>
 
-              <CardInput type="email" id="email" placeholder="Enter your email *" value={form.email} onChange={set('email')} icon="fa-solid fa-envelope" required />
+              <CardInput type="email" id="email" placeholder="Enter your email *" value={form.email} onChange={set('email')} icon="fa-solid fa-envelope" required onFocus={() => focusField('email')} onBlur={blurField} />
 
               {/* password row */}
               <CardInput
@@ -206,6 +334,8 @@ export default function Signup({ user }) {
                 icon="fa-solid fa-lock" 
                 required
                 minLength={6}
+                onFocus={() => focusField('password')}
+                onBlur={blurField}
               >
                 <button 
                   type="button" 
@@ -224,7 +354,7 @@ export default function Signup({ user }) {
                 </button>
               </CardInput>
 
-              <CardInput id="interestedArea" placeholder="Interested Area (e.g. NLP, Computer Vision)" value={form.interestedArea} onChange={set('interestedArea')} icon="fa-solid fa-brain" />
+              <CardInput id="interestedArea" placeholder="Interested Area (e.g. NLP, Computer Vision)" value={form.interestedArea} onChange={set('interestedArea')} icon="fa-solid fa-brain" onFocus={() => focusField('interestedArea')} onBlur={blurField} />
 
               {/* vibe picker */}
               <div>

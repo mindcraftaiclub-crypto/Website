@@ -56,6 +56,14 @@ export default function Auth({ user }) {
   const [loading, setLoading] = useState(false);
   const [agreed, setAgreed]   = useState(false);
   const [showPw, setShowPw]   = useState(false);
+  const [coords, setCoords]   = useState({ x: 0, y: 0 });
+
+  const handleMouseMove = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    setCoords({ x, y });
+  };
 
   const [form, setForm] = useState({ email: '', password: '' });
 
@@ -98,16 +106,29 @@ export default function Auth({ user }) {
       }}>
 
         {/* ══════ LEFT — vibrant orange panel ══════ */}
-        <div style={{
-          background: 'linear-gradient(135deg, #ff5500 0%, #ff8833 100%)',
-          padding: '3.5rem 2.8rem',
-          display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
-          color: '#fff',
-          position: 'relative',
-          overflow: 'hidden',
-          zIndex: 1
-        }}>
-          {/* Floating Spheres */}
+        <div 
+          onMouseMove={handleMouseMove}
+          style={{
+            background: 'linear-gradient(135deg, #ff5500 0%, #ff8833 100%)',
+            padding: '3.5rem 2.8rem',
+            display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+            color: '#fff',
+            position: 'relative',
+            overflow: 'hidden',
+            cursor: 'default',
+            zIndex: 1
+          }}
+        >
+          {/* Spotlight Glow Overlay */}
+          <div style={{
+            position: 'absolute',
+            top: 0, left: 0, right: 0, bottom: 0,
+            background: `radial-gradient(circle 220px at ${coords.x}px ${coords.y}px, rgba(255, 255, 255, 0.16) 0%, transparent 80%)`,
+            pointerEvents: 'none',
+            zIndex: 1
+          }} />
+
+          {/* Floating Spheres with Parallax */}
           <div style={{
             position: 'absolute',
             width: '280px',
@@ -117,6 +138,8 @@ export default function Auth({ user }) {
             borderRadius: '50%',
             background: 'linear-gradient(135deg, #ff8833 0%, #ff5500 100%)',
             boxShadow: 'inset -25px -25px 60px rgba(0,0,0,0.4), 10px 10px 40px rgba(0,0,0,0.15)',
+            transform: `translate(${coords.x * -0.04}px, ${coords.y * -0.04}px)`,
+            transition: 'transform 0.12s ease-out',
             zIndex: 0,
             opacity: 0.8
           }} />
@@ -129,6 +152,8 @@ export default function Auth({ user }) {
             borderRadius: '50%',
             background: 'linear-gradient(135deg, #ff5500 0%, #cc3300 100%)',
             boxShadow: 'inset -15px -15px 40px rgba(0,0,0,0.3), 10px 10px 30px rgba(0,0,0,0.1)',
+            transform: `translate(${coords.x * 0.03}px, ${coords.y * 0.03}px)`,
+            transition: 'transform 0.12s ease-out',
             zIndex: 0,
             opacity: 0.9
           }} />
