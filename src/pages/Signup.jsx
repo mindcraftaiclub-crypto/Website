@@ -4,13 +4,13 @@ import db from '../db';
 
 /* ─── Field-to-animation config ─── */
 const FIELD_CONFIG = {
-  name:           { emoji: '👤', label: 'Full Name',      color: '#ff6b35', msg: 'Tell us who you are — your name is the start of your story.' },
-  className:      { emoji: '🎓', label: 'Your Class',     color: '#8b5cf6', msg: 'Where are you studying? Let the learning community find you!' },
-  registerNumber: { emoji: '🪪', label: 'Register No.',   color: '#0ea5e9', msg: 'Your unique student ID — makes you official in Mindcraft.' },
-  phone:          { emoji: '📱', label: 'Phone Number',   color: '#10b981', msg: "We'll only reach out when it really matters. Promise!" },
-  email:          { emoji: '✉️', label: 'Email Address',  color: '#f59e0b', msg: 'Your inbox is your gateway to events, workshops, and updates.' },
-  password:       { emoji: '🔐', label: 'Password',       color: '#ef4444', msg: 'Make it strong — uppercase, digits, symbols. You got this.' },
-  interestedArea: { emoji: '🧠', label: 'Interested Area',color: '#6366f1', msg: 'NLP? Vision? RL? Shout out your AI passion and find your tribe.' },
+  name:           { icon: 'fa-solid fa-signature',      label: 'Full Name',      color: '#ff6b35', msg: 'Tell us who you are — your name is the start of your story.' },
+  className:      { icon: 'fa-solid fa-graduation-cap', label: 'Your Class',     color: '#8b5cf6', msg: 'Where are you studying? Let the learning community find you!' },
+  registerNumber: { icon: 'fa-solid fa-id-badge',       label: 'Register No.',   color: '#0ea5e9', msg: 'Your unique student ID — makes you official in Mindcraft.' },
+  phone:          { icon: 'fa-solid fa-mobile-screen',  label: 'Phone Number',   color: '#10b981', msg: "We'll only reach out when it really matters. Promise!" },
+  email:          { icon: 'fa-solid fa-envelope-open-text', label: 'Email Address', color: '#f59e0b', msg: 'Your inbox is your gateway to events, workshops, and updates.' },
+  password:       { icon: 'fa-solid fa-shield-halved',  label: 'Password',       color: '#ef4444', msg: 'Make it strong — uppercase, digits, symbols. You got this.' },
+  interestedArea: { icon: 'fa-solid fa-lightbulb',      label: 'Interested Area',color: '#6366f1', msg: 'NLP? Vision? RL? Shout out your AI passion and find your tribe.' },
 };
 
 /* ─── Modern card input with left icon ─── */
@@ -245,12 +245,19 @@ export default function Signup({ user }) {
                 boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
               }}>
                 <div style={{
-                  fontSize: '3.2rem',
+                  width: '72px', height: '72px', borderRadius: '50%',
+                  background: `${activeCfg.color}22`,
+                  border: `2px solid ${activeCfg.color}66`,
+                  boxShadow: `0 0 24px ${activeCfg.color}55`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  margin: '0 auto 1rem',
                   animation: 'emojiFloat 2s ease-in-out infinite',
-                  display: 'inline-block',
-                  marginBottom: '0.8rem',
                 }}>
-                  {activeCfg.emoji}
+                  <i className={activeCfg.icon} style={{
+                    fontSize: '1.8rem',
+                    color: activeCfg.color,
+                    filter: `drop-shadow(0 0 6px ${activeCfg.color})`,
+                  }} />
                 </div>
                 <div style={{
                   display: 'flex',
@@ -282,10 +289,18 @@ export default function Signup({ user }) {
             ) : (
               <div style={{
                 textAlign: 'center',
-                color: 'rgba(255,255,255,0.55)',
+                color: 'rgba(255,255,255,0.5)',
                 fontSize: '0.82rem',
               }}>
-                <div style={{ fontSize: '2.5rem', marginBottom: '0.6rem' }}>✨</div>
+                <div style={{
+                  width: '56px', height: '56px', borderRadius: '50%',
+                  background: 'rgba(255,255,255,0.08)',
+                  border: '1.5px solid rgba(255,255,255,0.2)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  margin: '0 auto 0.7rem',
+                }}>
+                  <i className="fa-solid fa-arrow-pointer" style={{ fontSize: '1.3rem', color: 'rgba(255,255,255,0.5)' }} />
+                </div>
                 <p style={{ margin: 0, fontWeight: 500 }}>Click any field to<br />see a hint here</p>
               </div>
             )}
