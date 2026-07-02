@@ -60,18 +60,21 @@ export default function App() {
 
   if (isFullscreenPage) {
     return (
-      <div style={{ position: 'relative', minHeight: '100vh', width: '100vw', overflow: 'hidden' }}>
-        {authLoading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
-            <div className="loading-spinner"></div>
-          </div>
-        ) : (
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/auth" element={<Auth user={user} />} />
-            <Route path="/signup" element={<Signup user={user} />} />
-          </Routes>
-        )}
+      <div style={{ position: 'relative', minHeight: '100vh', width: '100vw', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <Header user={user} />
+        <div style={{ flexGrow: 1, position: 'relative', overflow: 'hidden' }}>
+          {authLoading ? (
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+              <div className="loading-spinner"></div>
+            </div>
+          ) : (
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/auth" element={<Auth user={user} />} />
+              <Route path="/signup" element={<Signup user={user} />} />
+            </Routes>
+          )}
+        </div>
         <div id="toast-container" className="toast-container">
           {toasts.map((toast) => (
             <Toast key={toast.id} id={toast.id} title={toast.title} message={toast.message} type={toast.type} onClose={removeToast} />

@@ -101,7 +101,7 @@ export default function Signup({ user }) {
   /* ════════════════════════════════════════ RENDER ════════════════════════════════════════ */
   return (
     <div style={{
-      minHeight: '100vh',
+      minHeight: 'calc(100vh - 70px)',
       display: 'flex',
       background: '#fff',
     }}>
@@ -111,7 +111,7 @@ export default function Signup({ user }) {
         display: 'grid',
         gridTemplateColumns: '1fr 1.25fr',
         width: '100%',
-        minHeight: '100vh',
+        minHeight: 'calc(100vh - 70px)',
         background: '#fff'
       }}>
 
@@ -237,10 +237,10 @@ export default function Signup({ user }) {
         {/* ══════ RIGHT — white form panel ══════ */}
         <div className="auth-form-scroll" style={{
           background: '#fff',
-          padding: '100px 3rem 3rem 3rem',
+          padding: '2.5rem 3rem 3rem 3rem',
           display: 'flex', flexDirection: 'column',
           overflowY: 'auto',
-          minHeight: '100vh',
+          minHeight: 'calc(100vh - 70px)',
         }}>
 
           <div>
