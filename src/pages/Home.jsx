@@ -92,14 +92,14 @@ export default function Home() {
           width: 320px; height: 320px;
           background: linear-gradient(135deg, var(--orange) 0%, var(--orange-light) 100%);
           clip-path: polygon(0 0, 100% 0, 0 100%);
-          zIndex: 0;
+          z-index: 0;
         }
         .shard-br {
           position: absolute; bottom: 0; right: 0;
           width: 450px; height: 450px;
           background: linear-gradient(315deg, var(--orange) 0%, var(--orange-light) 100%);
           clip-path: polygon(100% 100%, 100% 0, 0 100%);
-          zIndex: 0;
+          z-index: 0;
         }
         .hero-logo-circle {
           border-radius: 50%;
@@ -107,7 +107,9 @@ export default function Home() {
           height: 360px;
           display: flex;
           align-items: center;
-          justifyContent: center;
+          justify-content: center;
+          padding-top: 20px;
+          box-sizing: border-box;
           background: #000000;
           box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
           position: relative;
