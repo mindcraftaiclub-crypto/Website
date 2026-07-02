@@ -145,64 +145,6 @@ export default function Auth({ user }) {
             opacity: 0.95
           }} />
 
-          {/* logo area */}
-          <div style={{ position: 'relative', zIndex: 1 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.3rem' }}>
-              {/* white logo mark */}
-              <div style={{ position: 'relative', width: '36px', height: '36px' }}>
-                <div style={{
-                  position: 'absolute', top: 0, left: 0,
-                  width: '22px', height: '22px',
-                  border: '3px solid #fff', borderRadius: '5px',
-                  background: 'transparent',
-                }} />
-                <div style={{
-                  position: 'absolute', bottom: 0, right: 0,
-                  width: '22px', height: '22px',
-                  background: '#fff', borderRadius: '5px',
-                  opacity: 0.9,
-                }} />
-              </div>
-              <div>
-                <div style={{ fontWeight: 900, fontSize: '1rem', letterSpacing: '0.04em', lineHeight: 1 }}>
-                  MINDCRAFT
-                </div>
-                <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.7)', letterSpacing: '0.08em', fontWeight: 600 }}>
-                  AI Club
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* hero text */}
-          <div style={{ position: 'relative', zIndex: 1, marginTop: 'auto', marginBottom: 'auto' }}>
-            <h2 style={{
-              fontSize: '2.5rem', fontWeight: 900, lineHeight: 1.1,
-              color: '#fff', margin: '0 0 1rem 0',
-              fontFamily: 'var(--font-display)',
-              textTransform: 'uppercase',
-              letterSpacing: '-0.02em'
-            }}>
-              Welcome
-            </h2>
-            <p style={{
-              fontSize: '0.8rem', color: 'rgba(255,255,255,0.85)',
-              lineHeight: 1.5, margin: 0, maxWidth: '280px',
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em',
-              fontWeight: 700,
-              marginBottom: '1rem'
-            }}>
-              Your Headline Name
-            </p>
-            <p style={{
-              fontSize: '0.82rem', color: 'rgba(255,255,255,0.75)',
-              lineHeight: 1.65, margin: 0, maxWidth: '270px',
-            }}>
-              Sign in to access your Mindcraft AI dashboard, track your progress, and connect with your community.
-            </p>
-          </div>
-
           {/* bottom tags */}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginTop: 'auto', position: 'relative', zIndex: 1 }}>
             {['LLMs', 'CV', 'Speech AI', 'MLOps', 'Research'].map(t => (
