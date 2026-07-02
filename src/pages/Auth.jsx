@@ -144,18 +144,6 @@ export default function Auth({ user }) {
             zIndex: 0,
             opacity: 0.95
           }} />
-
-          {/* bottom tags */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginTop: 'auto', position: 'relative', zIndex: 1 }}>
-            {['LLMs', 'CV', 'Speech AI', 'MLOps', 'Research'].map(t => (
-              <span key={t} style={{
-                background: 'rgba(255,255,255,0.15)',
-                border: '1px solid rgba(255,255,255,0.2)',
-                borderRadius: '20px', padding: '3px 10px',
-                fontSize: '0.7rem', fontWeight: 600, color: '#fff',
-              }}>{t}</span>
-            ))}
-          </div>
         </div>
 
         {/* ══════ RIGHT — white form panel ══════ */}
