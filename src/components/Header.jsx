@@ -67,7 +67,7 @@ export default function Header({ user }) {
   return (
     <header className="site-header">
       <Link to="/" className="header-logo" onClick={() => setIsMobileOpen(false)}>
-        <span className="logo-dot"></span> <span>MINDCRAFT AI</span>
+        <img src="/logo.png" alt="Logo" style={{ height: '30px', objectFit: 'contain', marginRight: '0.4rem' }} /> <span>MINDCRAFT AI</span>
       </Link>
 
       <nav className="nav-menu-desktop">
@@ -100,10 +100,12 @@ export default function Header({ user }) {
 
         {user ? (
           <div className="profile-dropdown-container" ref={profileRef}>
-            <button className="profile-trigger" onClick={() => setIsProfileOpen(prev => !prev)} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
               <span className="header-email-display" style={{ fontSize: '0.83rem', fontWeight: 600, color: 'var(--text-secondary)' }}>{user.email}</span>
-              <img className="profile-avatar-top" src={user.photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name || 'User')}&background=ff5500&color=fff`} alt={user.name} />
-            </button>
+              <button className="profile-trigger" onClick={() => setIsProfileOpen(prev => !prev)}>
+                <img className="profile-avatar-top" src={user.photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name || 'User')}&background=ff5500&color=fff`} alt={user.name} />
+              </button>
+            </div>
             <div className={`profile-dropdown-menu ${isProfileOpen ? 'active' : ''}`}>
               <div className="dropdown-user-header">
                 <span className="dropdown-user-name">{user.name}</span>
@@ -120,7 +122,7 @@ export default function Header({ user }) {
             </div>
           </div>
         ) : (
-          <Link to="/auth?tab=signup" className="btn btn-primary btn-sm header-signin-btn">
+          <Link to="/signup" className="btn btn-primary btn-sm header-signin-btn">
             <i className="fa-solid fa-user-plus"></i> <span>Join</span>
           </Link>
         )}
@@ -148,9 +150,9 @@ export default function Header({ user }) {
               <i className="fa-solid fa-right-from-bracket"></i> <span>Logout</span>
             </button>
           ) : (
-            <NavLink to="/auth?tab=signup" className="mobile-nav-link" onClick={() => setIsMobileOpen(false)}>
-              <i className="fa-solid fa-user-plus"></i> <span>Join</span>
-            </NavLink>
+             <NavLink to="/signup" className="mobile-nav-link" onClick={() => setIsMobileOpen(false)}>
+               <i className="fa-solid fa-user-plus"></i> <span>Join</span>
+             </NavLink>
           )}
         </div>
       </div>

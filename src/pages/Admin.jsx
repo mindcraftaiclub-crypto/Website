@@ -5,7 +5,6 @@ const TABS = [
   { id: 'members',      label: 'Members',       icon: 'fa-users' },
   { id: 'core',         label: 'Core Board',    icon: 'fa-star' },
   { id: 'events',       label: 'Events',        icon: 'fa-calendar' },
-  { id: 'announcements',label: 'Announcements', icon: 'fa-bullhorn' },
   { id: 'stats',        label: 'Stats Config',  icon: 'fa-chart-simple' },
   { id: 'requests',     label: 'Applications',  icon: 'fa-file-signature' },
 ];
@@ -50,10 +49,10 @@ function MembersTab() {
 
   useEffect(() => { load(); }, []);
 
-  const handleDeleteMember = async (id, name) => {
+  const handleDeleteMember = async (id, name, email) => {
     if (!window.confirm(`Are you sure you want to delete member "${name}"?`)) return;
     try {
-      await db.delete('Users', id);
+      await db.delete('Users', id, email);
       window.showToast('Member Deleted', 'The member record has been removed.', 'success');
       load();
     } catch (err) {
@@ -113,7 +112,7 @@ function MembersTab() {
                     <td>{m.department || '—'}</td>
                     <td style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{m.createdAt ? new Date(m.createdAt).toLocaleDateString() : '—'}</td>
                     <td style={{ textAlign: 'center' }}>
-                      <button onClick={() => handleDeleteMember(m.id, m.name)} style={{ background: '#fee2e2', border: 'none', borderRadius: 6, padding: '4px 8px', color: '#dc2626', fontSize: '0.74rem', fontWeight: 600, cursor: 'pointer' }}>
+                      <button onClick={() => handleDeleteMember(m.id, m.name, m.email)} style={{ background: '#fee2e2', border: 'none', borderRadius: 6, padding: '4px 8px', color: '#dc2626', fontSize: '0.74rem', fontWeight: 600, cursor: 'pointer' }}>
                         Delete
                       </button>
                     </td>
@@ -219,10 +218,10 @@ function CoreBoardTab({ allMembers }) {
     }
   };
 
-  const handleDelete = async (id, name) => {
+  const handleDelete = async (id, name, email) => {
     if (!window.confirm(`Delete ${name} from Core Board?`)) return;
     try {
-      await db.delete('CoreMembers', id);
+      await db.delete('CoreMembers', id, email);
       window.showToast('Deleted', `${name} removed.`, 'success');
       setCoreMembers(prev => prev.filter(m => m.id !== id));
     } catch (err) {
@@ -231,7 +230,7 @@ function CoreBoardTab({ allMembers }) {
   };
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.4fr', gap: '1.5rem' }}>
+    <div className="admin-grid-layout">
       {/* ADD FORM */}
       <div>
         <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14, padding: '1.5rem' }}>
@@ -333,7 +332,7 @@ function CoreBoardTab({ allMembers }) {
                     >
                       <i className="fa-solid fa-pen" />
                     </button>
-                    <button onClick={() => handleDelete(m.id, m.name)} style={{ background: '#fee2e2', border: 'none', borderRadius: 8, width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#dc2626', fontSize: '0.82rem', transition: 'background 0.2s' }}
+                    <button onClick={() => handleDelete(m.id, m.name, m.email)} style={{ background: '#fee2e2', border: 'none', borderRadius: 8, width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#dc2626', fontSize: '0.82rem', transition: 'background 0.2s' }}
                       onMouseEnter={e => e.currentTarget.style.background = '#fecaca'}
                       onMouseLeave={e => e.currentTarget.style.background = '#fee2e2'}
                       title="Delete Member"
@@ -385,7 +384,7 @@ function EventsTab() {
   };
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.4fr', gap: '1.5rem' }}>
+    <div className="admin-grid-layout">
       <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14, padding: '1.5rem' }}>
         <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1.25rem', color: 'var(--text)' }}>
           <i className="fa-solid fa-calendar-plus" style={{ color: 'var(--orange)', marginRight: '0.5rem' }} />Add Event
@@ -432,81 +431,7 @@ function EventsTab() {
 }
 
 /* ═══════════════════════════════════ ANNOUNCEMENTS TAB ═══════════════════════════════════ */
-function AnnouncementsTab() {
-  const [list, setList] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [form, setForm] = useState({ title: '', content: '', important: false });
-  const [saving, setSaving] = useState(false);
 
-  const load = async () => {
-    try { setList(await db.find('Announcements')); }
-    catch { window.showToast('Error', 'Could not load announcements.', 'error'); }
-    finally { setLoading(false); }
-  };
-
-  useEffect(() => { load(); }, []);
-
-  const handleAdd = async () => {
-    if (!form.title || !form.content) { window.showToast('Missing Fields', 'Title and content are required.', 'error'); return; }
-    setSaving(true);
-    try {
-      await db.insert('Announcements', { ...form, createdAt: new Date().toISOString() });
-      window.showToast('Posted!', form.title, 'success');
-      setForm({ title: '', content: '', important: false });
-      load();
-    } catch (err) { window.showToast('Error', err.message, 'error'); }
-    finally { setSaving(false); }
-  };
-
-  const handleDelete = async (id, title) => {
-    if (!window.confirm(`Delete: ${title}?`)) return;
-    try { await db.delete('Announcements', id); setList(prev => prev.filter(a => a.id !== id)); window.showToast('Deleted', title, 'success'); }
-    catch (err) { window.showToast('Error', err.message, 'error'); }
-  };
-
-  return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.4fr', gap: '1.5rem' }}>
-      <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14, padding: '1.5rem' }}>
-        <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1.25rem', color: 'var(--text)' }}>
-          <i className="fa-solid fa-bullhorn" style={{ color: 'var(--orange)', marginRight: '0.5rem' }} />New Announcement
-        </h3>
-        <input value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} placeholder="Title *"
-          style={{ width: '100%', padding: '0.65rem 0.9rem', border: '1px solid var(--border)', borderRadius: 8, fontSize: '0.88rem', color: 'var(--text)', background: 'var(--surface)', marginBottom: '0.65rem' }} />
-        <textarea value={form.content} onChange={e => setForm(p => ({ ...p, content: e.target.value }))} placeholder="Content *" rows={4}
-          style={{ width: '100%', padding: '0.65rem 0.9rem', border: '1px solid var(--border)', borderRadius: 8, fontSize: '0.88rem', color: 'var(--text)', background: 'var(--surface)', marginBottom: '0.75rem', resize: 'vertical' }} />
-        <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.88rem', cursor: 'pointer', marginBottom: '0.9rem', color: 'var(--text-secondary)' }}>
-          <input type="checkbox" checked={form.important} onChange={e => setForm(p => ({ ...p, important: e.target.checked }))} style={{ accentColor: 'var(--orange)', width: 16, height: 16 }} />
-          Mark as Important
-        </label>
-        <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center' }} onClick={handleAdd} disabled={saving}>
-          {saving ? <><i className="fa-solid fa-spinner fa-spin" /> Posting…</> : <><i className="fa-solid fa-paper-plane" /> Post Announcement</>}
-        </button>
-      </div>
-
-      <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden' }}>
-        <div style={{ padding: '0.9rem 1.2rem', borderBottom: '1px solid var(--border)', fontWeight: 700, fontSize: '0.88rem' }}>All Announcements</div>
-        {loading ? <div className="loading-spinner" /> : (
-          <div style={{ padding: '0.75rem', maxHeight: 460, overflowY: 'auto' }}>
-            {list.length === 0 ? <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>No announcements yet.</div> : list.map(a => (
-              <div key={a.id} style={{ padding: '0.85rem', borderRadius: 10, borderLeft: `3px solid ${a.important ? 'var(--orange)' : 'var(--border)'}`, background: a.important ? 'rgba(255,85,0,0.03)' : 'transparent', marginBottom: '0.5rem', display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem' }}>
-                    <span style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--text)' }}>{a.title}</span>
-                    {a.important && <Badge color="orange">Important</Badge>}
-                  </div>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>{a.content}</div>
-                </div>
-                <button onClick={() => handleDelete(a.id, a.title)} style={{ background: '#fee2e2', border: 'none', borderRadius: 7, width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#dc2626', fontSize: '0.78rem', flexShrink: 0 }}>
-                  <i className="fa-solid fa-trash" />
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
 
 /* ═══════════════════════════════════ STATS CONFIG TAB ═══════════════════════════════════ */
 function StatsTab() {
@@ -703,16 +628,16 @@ function RequestsTab() {
 export default function Admin({ user }) {
   const [tab, setTab] = useState('members');
   const [members, setMembers] = useState([]);
-  const [stats, setStats] = useState({ members: 0, core: 0, events: 0, announcements: 0 });
+  const [stats, setStats] = useState({ members: 0, core: 0, events: 0 });
 
   useEffect(() => {
     (async () => {
       try {
-        const [m, c, e, a] = await Promise.all([
-          db.find('Users'), db.find('CoreMembers'), db.find('Events'), db.find('Announcements')
+        const [m, c, e] = await Promise.all([
+          db.find('Users'), db.find('CoreMembers'), db.find('Events')
         ]);
         setMembers(m);
-        setStats({ members: m.length, core: c.length, events: e.length, announcements: a.length });
+        setStats({ members: m.length, core: c.length, events: e.length });
       } catch { /* ignore */ }
     })();
   }, []);
@@ -721,11 +646,22 @@ export default function Admin({ user }) {
     { label: 'Total Members', value: stats.members, icon: 'fa-users',      color: '#3b82f6' },
     { label: 'Core Board',    value: stats.core,    icon: 'fa-star',       color: '#f59e0b' },
     { label: 'Events',        value: stats.events,  icon: 'fa-calendar',   color: '#10b981' },
-    { label: 'Announcements', value: stats.announcements, icon: 'fa-bullhorn', color: 'var(--orange)' },
   ];
 
   return (
     <div>
+      <style>{`
+        .admin-grid-layout {
+          display: grid;
+          grid-template-columns: 1fr 1.4fr;
+          gap: 1.5rem;
+        }
+        @media (max-width: 768px) {
+          .admin-grid-layout {
+            grid-template-columns: 1fr !important;
+          }
+        }
+      `}</style>
       {/* Header */}
       <div style={{ marginBottom: '2rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.4rem' }}>
@@ -777,7 +713,6 @@ export default function Admin({ user }) {
       {tab === 'members'       && <MembersTab />}
       {tab === 'core'          && <CoreBoardTab allMembers={members} />}
       {tab === 'events'        && <EventsTab />}
-      {tab === 'announcements' && <AnnouncementsTab />}
       {tab === 'stats'         && <StatsTab />}
       {tab === 'requests'      && <RequestsTab />}
     </div>

@@ -5,6 +5,7 @@ import workingUrls from '../../working_gallery_urls.json';
 
 export default function Gallery() {
   const [events, setEvents] = useState([]);
+  const [activeCategory, setActiveCategory] = useState('All');
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [lightboxUrl, setLightboxUrl] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -24,6 +25,16 @@ export default function Gallery() {
 
         const list = await db.find('Events');
         
+        const CATEGORIES = {
+          'evt_1': 'Seminars',
+          'evt_2': 'Seminars',
+          'evt_3': 'Workshops',
+          'evt_4': 'Events',
+          'evt_5': 'Coding Sprints',
+          'evt_6': 'Workshops',
+          'evt_7': 'Seminars'
+        };
+
         // Map events to their respective snapshots from workingUrls
         const eventsWithSnaps = list.map(evt => {
           const eventNum = evt.id.split('_')[1]; // e.g. '1' from 'evt_1'
@@ -37,7 +48,8 @@ export default function Gallery() {
           return {
             ...evt,
             folderKey,
-            snapshots
+            snapshots,
+            category: CATEGORIES[evt.id] || 'Events'
           };
         })
         // Sort by date descending
@@ -51,6 +63,10 @@ export default function Gallery() {
       }
     })();
   }, []);
+
+  const filteredEvents = activeCategory === 'All'
+    ? events
+    : events.filter(evt => evt.category === activeCategory);
 
   return (
     <div className="animated-entrance" style={{ position: 'relative', minHeight: '80vh' }}>
@@ -85,10 +101,20 @@ export default function Gallery() {
         }
         .fullscreen-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+          grid-template-columns: repeat(4, 1fr);
           gap: 1.5rem;
           margin-top: 2rem;
           padding-bottom: 4rem;
+        }
+        @media (max-width: 1024px) {
+          .fullscreen-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+        }
+        @media (max-width: 640px) {
+          .fullscreen-grid {
+            grid-template-columns: 1fr;
+          }
         }
         .fullscreen-img-card {
           border-radius: var(--radius-lg);
@@ -97,14 +123,42 @@ export default function Gallery() {
           cursor: zoom-in;
           border: 1px solid var(--border-light);
           background: var(--card);
-          aspect-ratio: 4/3;
+          height: 250px;
           position: relative;
           transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .fullscreen-img-card.span-2 {
+          grid-column: span 2;
+        }
+        @media (max-width: 640px) {
+          .fullscreen-img-card.span-2 {
+            grid-column: span 1;
+          }
         }
         .fullscreen-img-card:hover {
           transform: translateY(-4px);
           box-shadow: var(--shadow-md);
           border-color: var(--orange);
+        }
+        .snap-card-overlay {
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(to top, rgba(0, 0, 0, 0.55) 0%, rgba(0, 0, 0, 0.1) 40%, transparent 100%);
+          display: flex;
+          align-items: flex-end;
+          padding: 1.25rem;
+          transition: all 0.3s ease;
+          pointer-events: none;
+        }
+        .fullscreen-img-card:hover .snap-card-overlay {
+          background: linear-gradient(to top, rgba(0, 0, 0, 0.75) 0%, rgba(0, 0, 0, 0.2) 50%, transparent 100%);
+        }
+        .snap-card-label {
+          color: #fff;
+          font-weight: 700;
+          font-size: 0.88rem;
+          letter-spacing: 0.05em;
+          text-transform: uppercase;
         }
         .lightbox-top-overlay {
           position: fixed;
@@ -117,6 +171,144 @@ export default function Gallery() {
           justify-content: center;
           cursor: zoom-out;
         }
+        
+        /* Subframe Gallery Styles */
+        .gallery-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+          gap: 2rem;
+          margin-top: 2.5rem;
+          padding-bottom: 4rem;
+        }
+        .gallery-card {
+          position: relative;
+          aspect-ratio: 3/4;
+          border-radius: var(--radius-lg);
+          overflow: hidden;
+          box-shadow: var(--shadow-sm);
+          border: 1px solid var(--border-light);
+          cursor: pointer;
+          background: var(--card);
+          transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .gallery-card:hover {
+          transform: translateY(-6px) scale(1.01);
+          box-shadow: var(--shadow-xl);
+          border-color: var(--orange);
+        }
+        .gallery-card-img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .gallery-card:hover .gallery-card-img {
+          transform: scale(1.05);
+        }
+        .gallery-card-overlay {
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(to top, rgba(15, 17, 23, 0.95) 0%, rgba(15, 17, 23, 0.4) 60%, rgba(15, 17, 23, 0) 100%);
+          display: flex;
+          flex-direction: column;
+          justify-content: flex-end;
+          padding: 2.5rem 1.5rem 1.5rem;
+          opacity: 0;
+          transform: translateY(20px);
+          transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+          pointer-events: none;
+        }
+        .gallery-card:hover .gallery-card-overlay {
+          opacity: 1;
+          transform: translateY(0);
+          pointer-events: auto;
+        }
+        .glass-badge {
+          background: rgba(255, 255, 255, 0.15);
+          backdrop-filter: blur(10px);
+          -webkit-backdrop-filter: blur(10px);
+          border: 1px solid rgba(255, 255, 255, 0.25);
+          color: #fff;
+          font-weight: 700;
+          font-size: 0.7rem;
+          padding: 0.25rem 0.6rem;
+          border-radius: 50px;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          align-self: flex-start;
+          margin-bottom: 0.75rem;
+        }
+        .gallery-card-title {
+          font-size: 1.25rem;
+          font-weight: 800;
+          color: #fff;
+          line-height: 1.25;
+          margin-bottom: 0.4rem;
+          letter-spacing: -0.01em;
+        }
+        .gallery-card-info {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          font-size: 0.8rem;
+          color: rgba(255, 255, 255, 0.7);
+          margin-bottom: 1.25rem;
+          font-weight: 500;
+        }
+        .gallery-card-info span {
+          display: flex;
+          align-items: center;
+          gap: 0.35rem;
+        }
+        .gallery-view-btn {
+          width: 100%;
+          background: var(--orange);
+          color: #fff;
+          padding: 0.65rem 1rem;
+          border-radius: var(--radius-sm);
+          font-weight: 700;
+          font-size: 0.82rem;
+          text-align: center;
+          transition: all 0.2s ease;
+          border: none;
+          box-shadow: var(--shadow-sm);
+        }
+        .gallery-view-btn:hover {
+          background: var(--orange-light);
+          transform: translateY(-1px);
+        }
+        .filter-tabs {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          gap: 0.75rem;
+          flex-wrap: wrap;
+          margin: 3rem auto 1rem;
+          max-width: 800px;
+          padding: 0 1rem;
+        }
+        .filter-tab-pill {
+          padding: 0.5rem 1.25rem;
+          border-radius: 50px;
+          font-size: 0.85rem;
+          font-weight: 600;
+          color: var(--text-secondary);
+          border: 1px solid var(--border-light);
+          background: var(--card);
+          transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+          cursor: pointer;
+        }
+        .filter-tab-pill:hover {
+          border-color: var(--orange);
+          color: var(--orange);
+          transform: translateY(-1px);
+        }
+        .filter-tab-pill.active {
+          background: var(--orange);
+          border-color: var(--orange);
+          color: #fff;
+          box-shadow: var(--shadow-brand);
+        }
       `}</style>
 
       <div className="page-header">
@@ -125,21 +317,35 @@ export default function Gallery() {
         <p className="page-subtitle">Select an event poster below to view all the captured snapshots in a full-screen layout.</p>
       </div>
 
+      {/* Filter Tabs Pills */}
+      <div className="filter-tabs">
+        {['All', 'Workshops', 'Seminars', 'Events', 'Coding Sprints'].map(cat => (
+          <button
+            key={cat}
+            className={`filter-tab-pill ${activeCategory === cat ? 'active' : ''}`}
+            onClick={() => setActiveCategory(cat)}
+          >
+            {cat}
+          </button>
+        ))}
+      </div>
+
       {loading ? (
         <div className="loading-spinner" />
       ) : (
         <motion.div 
-          className="grid-auto"
+          className="gallery-grid"
           initial="hidden"
           animate="visible"
           variants={{
             hidden: {},
-            visible: { transition: { staggerChildren: 0.08 } }
+            visible: { transition: { staggerChildren: 0.04 } }
           }}
         >
-          {events.map((evt) => (
+          {filteredEvents.map((evt) => (
             <motion.div
               key={evt.id}
+              className="gallery-card"
               variants={{
                 hidden: { opacity: 0, y: 35, scale: 0.97 },
                 visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] } }
@@ -147,52 +353,38 @@ export default function Gallery() {
               whileInView="visible"
               viewport={{ once: true, margin: "-40px" }}
               onClick={() => setSelectedEvent(evt)}
-              style={{
-                background: 'var(--card)',
-                border: '1px solid var(--border-light)',
-                borderRadius: 'var(--radius-lg)',
-                overflow: 'hidden',
-                cursor: 'pointer',
-                boxShadow: 'var(--shadow-sm)',
-                transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
-              }}
-              onMouseEnter={e => {
-                e.currentTarget.style.boxShadow = 'var(--shadow-md)';
-                e.currentTarget.style.transform = 'translateY(-3px)';
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
-                e.currentTarget.style.transform = 'translateY(0)';
-              }}
             >
-              {/* Event Poster Card */}
-              <div style={{ overflow: 'hidden', height: 280, background: 'var(--surface)', position: 'relative' }}>
-                <img 
-                  src={evt.poster} 
-                  alt={evt.title} 
-                  style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block', transition: 'transform 0.4s ease' }} 
-                  onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.03)'}
-                  onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
-                />
-                <div style={{
-                  position: 'absolute', inset: 0,
-                  background: 'linear-gradient(to top, rgba(0,0,0,0.4) 0%, transparent 50%)',
-                  pointerEvents: 'none'
-                }} />
-              </div>
-              <div style={{ padding: '1.25rem' }}>
-                <span style={{ fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--orange)' }}>
-                  {evt.venue}
+              {/* Event Poster Image */}
+              <img 
+                src={evt.poster} 
+                alt={evt.title} 
+                className="gallery-card-img"
+              />
+
+              {/* Glassmorphic Hover Overlay */}
+              <div className="gallery-card-overlay">
+                <span className="glass-badge">
+                  {evt.category}
                 </span>
-                <h3 style={{ fontSize: '0.95rem', fontWeight: 700, marginTop: '0.2rem', color: 'var(--text)' }}>
+
+                <h3 className="gallery-card-title">
                   {evt.title}
                 </h3>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.6rem' }}>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>🕐 {evt.date}</span>
-                  <span style={{ fontSize: '0.72rem', background: 'rgba(var(--orange-rgb), 0.08)', color: 'var(--orange)', padding: '0.15rem 0.5rem', borderRadius: 4, fontWeight: 700 }}>
-                    {evt.snapshots?.length || 0} Snaps
-                  </span>
+
+                <div className="gallery-card-info">
+                  <span>📍 {evt.venue.split('(')[0].trim()}</span>
+                  <span>🕐 {evt.date}</span>
                 </div>
+
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedEvent(evt);
+                  }}
+                  className="gallery-view-btn"
+                >
+                  <i className="fa-solid fa-images"></i> View Snaps ({evt.snapshots?.length || 0})
+                </button>
               </div>
             </motion.div>
           ))}
@@ -225,7 +417,7 @@ export default function Gallery() {
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.5rem', fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.5rem', fontWeight: 500 }}>
                 <span>📍 Venue: {selectedEvent.venue}</span>
                 <span>🕐 Date: {selectedEvent.date}</span>
-                <span>📸 Snapshots: {Math.min(selectedEvent.snapshots?.length || 0, 5)} items</span>
+                <span>📸 Snapshots: {selectedEvent.snapshots?.length || 0} items</span>
               </div>
               <p style={{ fontSize: '0.95rem', color: 'var(--text-secondary)', marginTop: '1rem', lineHeight: 1.65, maxWidth: '800px' }}>
                 {selectedEvent.description}
@@ -235,7 +427,7 @@ export default function Gallery() {
             {/* Grid of Snaps */}
             {selectedEvent.snapshots && selectedEvent.snapshots.length > 0 ? (
               (() => {
-                const displayedSnaps = selectedEvent.snapshots.slice(0, 5);
+                const displayedSnaps = selectedEvent.snapshots;
                 return (
                   <motion.div 
                     className="fullscreen-grid"
@@ -246,25 +438,34 @@ export default function Gallery() {
                       visible: { transition: { staggerChildren: 0.04 } }
                     }}
                   >
-                    {displayedSnaps.map((url, idx) => (
-                      <motion.div 
-                        key={idx}
-                        className="fullscreen-img-card"
-                        variants={{
-                          hidden: { opacity: 0, y: 30, scale: 0.95 },
-                          visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] } }
-                        }}
-                        onClick={() => setLightboxUrl(url)}
-                      >
-                        <img 
-                          src={url} 
-                          alt="Event snapshot memory" 
-                          style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', transition: 'transform 0.4s ease' }} 
-                          onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'}
-                          onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
-                        />
-                      </motion.div>
-                    ))}
+                    {displayedSnaps.map((url, idx) => {
+                      const isSpan2 = idx % 6 === 1 || idx % 6 === 3;
+                      return (
+                        <motion.div 
+                          key={idx}
+                          className={`fullscreen-img-card ${isSpan2 ? 'span-2' : ''}`}
+                          variants={{
+                            hidden: { opacity: 0, y: 30, scale: 0.95 },
+                            visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] } }
+                          }}
+                          onClick={() => setLightboxUrl(url)}
+                        >
+                          <img 
+                            src={url} 
+                            alt="Event snapshot memory" 
+                            style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', transition: 'transform 0.4s ease' }} 
+                            onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.05)'}
+                            onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+                          />
+                          {/* Snap Overlay and Label */}
+                          <div className="snap-card-overlay">
+                            <span className="snap-card-label">
+                              Snap #{(idx + 1).toString().padStart(2, '0')}
+                            </span>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
                   </motion.div>
                 );
               })()

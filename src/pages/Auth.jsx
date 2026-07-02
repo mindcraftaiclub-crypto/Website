@@ -2,510 +2,337 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import db from '../db';
 
+/* ─── Modern card input with left icon ─── */
+const CardInput = ({ type = 'text', id, placeholder, value, onChange, icon, required = false, minLength, children, style = {} }) => (
+  <div style={{
+    display: 'flex',
+    alignItems: 'center',
+    background: '#f3f4f6',
+    borderRadius: '8px',
+    padding: '0.45rem 1rem',
+    border: '1.5px solid transparent',
+    transition: 'all 0.2s ease',
+    width: '100%',
+    ...style
+  }}
+  onFocusCapture={e => {
+    e.currentTarget.style.background = '#fff';
+    e.currentTarget.style.borderColor = 'var(--orange)';
+    e.currentTarget.style.boxShadow = '0 0 0 4px var(--orange-glow)';
+  }}
+  onBlurCapture={e => {
+    e.currentTarget.style.background = '#f3f4f6';
+    e.currentTarget.style.borderColor = 'transparent';
+    e.currentTarget.style.boxShadow = 'none';
+  }}
+  >
+    {icon && <i className={icon} style={{ color: '#6b7280', marginRight: '0.75rem', fontSize: '0.92rem' }} />}
+    <input
+      type={type}
+      id={id}
+      placeholder={placeholder}
+      value={value}
+      onChange={onChange}
+      required={required}
+      minLength={minLength}
+      style={{
+        border: 'none',
+        background: 'transparent',
+        padding: '0.35rem 0',
+        fontSize: '0.88rem',
+        color: '#1e293b',
+        outline: 'none',
+        width: '100%',
+      }}
+    />
+    {children}
+  </div>
+);
+
 export default function Auth({ user }) {
-  const navigate = useNavigate();
-  const location = useLocation();
+  const navigate  = useNavigate();
+  const location  = useLocation();
 
-  const params = new URLSearchParams(location.search);
-  const redirectPath = params.get('redirect') || '/';
-  const tabParam = params.get('tab') || 'signin';
-
-  const [activeTab, setActiveTab] = useState(tabParam);
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    className: '',
-    registerNumber: '',
-    phone: '',
-    interestedArea: '',
-    codingStyle: ''
-  });
   const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+  const [agreed, setAgreed]   = useState(false);
+  const [showPw, setShowPw]   = useState(false);
 
-  useEffect(() => {
-    if (user) navigate(redirectPath);
-  }, [user, navigate, redirectPath]);
+  const [form, setForm] = useState({ email: '', password: '' });
 
-  useEffect(() => {
-    const t = params.get('tab');
-    if (t === 'signup' || t === 'signin') {
-      setActiveTab(t);
-    }
-  }, [location.search]);
+  const params       = new URLSearchParams(location.search);
+  const redirectPath = params.get('redirect') || '/';
 
-  const handleInputChange = (e) => {
-    const { id, value } = e.target;
-    setFormData(prev => ({ ...prev, [id]: value }));
-  };
+  /* redirect if already logged in */
+  useEffect(() => { if (user) navigate(redirectPath); }, [user]);
 
-  const handleSignIn = async (e) => {
+  const set = id => e => setForm(p => ({ ...p, [id]: e.target.value }));
+
+  /* ── sign-in ── */
+  const handleSignIn = async e => {
     e.preventDefault();
     setLoading(true);
     try {
-      const result = await db.login(formData.email.trim(), formData.password);
-      window.showToast('Login Successful', `Welcome back, ${result.user.name}!`, 'success');
-      setTimeout(() => navigate(redirectPath), 1000);
+      const r = await db.login(form.email.trim(), form.password);
+      window.showToast('Login Successful', `Welcome back, ${r.user.name}!`, 'success');
+      setTimeout(() => navigate(redirectPath), 900);
     } catch (err) {
       window.showToast('Authentication Failed', err.message, 'error');
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
 
-  const handleSignUp = async (e) => {
-    e.preventDefault();
-    if (formData.password.length < 6) {
-      window.showToast('Insecure Password', 'Passwords must contain at least 6 characters.', 'warning');
-      return;
-    }
-    if (!formData.codingStyle) {
-      window.showToast('Required Fields', 'Please choose your coding style poll option.', 'warning');
-      return;
-    }
-    setLoading(true);
-    try {
-      const newUser = await db.register(
-        formData.name.trim(),
-        formData.email.trim(),
-        formData.password,
-        formData.className.trim(),
-        formData.registerNumber.trim(),
-        formData.phone.trim(),
-        formData.interestedArea.trim(),
-        formData.codingStyle
-      );
-      window.showToast('Registration Successful', `Welcome to Mindcraft AI, ${formData.name}!`, 'success');
-      setTimeout(() => {
-        navigate(redirectPath);
-      }, 1200);
-    } catch (err) {
-      window.showToast('Signup Failed', err.message, 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  /* ════════════════════════════════════════ RENDER ════════════════════════════════════════ */
   return (
-    <div className="auth-container" style={{ minHeight: 'calc(100vh - var(--header-height))', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-2)', padding: '2.5rem 1.25rem' }}>
-      <div className="premium-auth-card" style={{
-        width: '100%',
-        maxWidth: activeTab === 'signup' ? '920px' : '780px',
-        background: 'var(--card)',
-        border: '1px solid var(--border)',
-        borderRadius: '24px',
-        boxShadow: 'var(--shadow-xl)',
-        overflow: 'hidden',
+    <div style={{
+      minHeight: '100vh',
+      display: 'flex',
+      background: '#fff',
+    }}>
+
+      {/* ── outer card ── */}
+      <div className="auth-split-card" style={{
         display: 'grid',
-        gridTemplateColumns: '1fr 1.15fr',
-        transition: 'all 0.35s cubic-bezier(0.16, 1, 0.3, 1)',
-        minHeight: '520px'
+        gridTemplateColumns: '1fr 1.25fr',
+        width: '100%',
+        minHeight: '100vh',
+        background: '#fff'
       }}>
-        
-        {/* Left Side: Branding / Intro */}
+
+        {/* ══════ LEFT — vibrant orange panel ══════ */}
         <div style={{
-          background: 'linear-gradient(135deg, #090b11 0%, #151922 100%)',
-          padding: '3.5rem 3rem',
+          background: 'linear-gradient(135deg, #ff5500 0%, #ff8833 100%)',
+          padding: '3.5rem 2.8rem',
+          display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
           color: '#fff',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'space-between',
           position: 'relative',
-          overflow: 'hidden'
+          overflow: 'hidden',
+          zIndex: 1
         }}>
-          {/* Technical grid overlay */}
+          {/* Floating Spheres */}
           <div style={{
             position: 'absolute',
-            inset: 0,
-            backgroundImage: 'radial-gradient(rgba(255, 85, 0, 0.12) 1.5px, transparent 1.5px)',
-            backgroundSize: '24px 24px',
-            opacity: 0.7,
-            pointerEvents: 'none'
+            width: '280px',
+            height: '280px',
+            top: '-60px',
+            right: '-100px',
+            borderRadius: '50%',
+            background: 'linear-gradient(135deg, #ff8833 0%, #ff5500 100%)',
+            boxShadow: 'inset -25px -25px 60px rgba(0,0,0,0.4), 10px 10px 40px rgba(0,0,0,0.15)',
+            zIndex: 0,
+            opacity: 0.8
           }} />
-
-          {/* Glow Effect */}
           <div style={{
             position: 'absolute',
-            top: '-50px',
-            left: '-50px',
-            width: '250px',
-            height: '250px',
-            background: 'radial-gradient(circle, rgba(255, 85, 0, 0.12) 0%, transparent 70%)',
-            pointerEvents: 'none'
+            width: '190px',
+            height: '190px',
+            bottom: '-40px',
+            left: '-60px',
+            borderRadius: '50%',
+            background: 'linear-gradient(135deg, #ff5500 0%, #cc3300 100%)',
+            boxShadow: 'inset -15px -15px 40px rgba(0,0,0,0.3), 10px 10px 30px rgba(0,0,0,0.1)',
+            zIndex: 0,
+            opacity: 0.9
+          }} />
+          <div style={{
+            position: 'absolute',
+            width: '150px',
+            height: '150px',
+            bottom: '80px',
+            right: '-30px',
+            borderRadius: '50%',
+            background: 'linear-gradient(135deg, #ffaa66 0%, #ff5500 100%)',
+            boxShadow: 'inset -15px -15px 35px rgba(0,0,0,0.35), 5px 15px 30px rgba(0,0,0,0.15)',
+            zIndex: 0,
+            opacity: 0.95
           }} />
 
+          {/* logo area */}
           <div style={{ position: 'relative', zIndex: 1 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '2.5rem' }}>
-              <span style={{ width: '9px', height: '9px', borderRadius: '50%', background: 'var(--orange)', boxShadow: '0 0 10px var(--orange)' }}></span>
-              <span style={{ fontSize: '0.8rem', fontWeight: 800, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.7)' }}>
-                Mindcraft AI
-              </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.3rem' }}>
+              {/* white logo mark */}
+              <div style={{ position: 'relative', width: '36px', height: '36px' }}>
+                <div style={{
+                  position: 'absolute', top: 0, left: 0,
+                  width: '22px', height: '22px',
+                  border: '3px solid #fff', borderRadius: '5px',
+                  background: 'transparent',
+                }} />
+                <div style={{
+                  position: 'absolute', bottom: 0, right: 0,
+                  width: '22px', height: '22px',
+                  background: '#fff', borderRadius: '5px',
+                  opacity: 0.9,
+                }} />
+              </div>
+              <div>
+                <div style={{ fontWeight: 900, fontSize: '1rem', letterSpacing: '0.04em', lineHeight: 1 }}>
+                  MINDCRAFT
+                </div>
+                <div style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.7)', letterSpacing: '0.08em', fontWeight: 600 }}>
+                  AI Club
+                </div>
+              </div>
             </div>
+          </div>
 
-            <h2 style={{ fontSize: '2.1rem', fontWeight: 900, color: '#fff', lineHeight: 1.2, marginBottom: '1.25rem', fontFamily: 'var(--font-display)', letterSpacing: '-0.02em' }}>
-              Fostering <span style={{ color: 'var(--orange)' }}>Creativity</span> & Collaborative <span style={{ borderBottom: '2.5px solid var(--orange)' }}>Development</span>.
+          {/* hero text */}
+          <div style={{ position: 'relative', zIndex: 1, marginTop: 'auto', marginBottom: 'auto' }}>
+            <h2 style={{
+              fontSize: '2.5rem', fontWeight: 900, lineHeight: 1.1,
+              color: '#fff', margin: '0 0 1rem 0',
+              fontFamily: 'var(--font-display)',
+              textTransform: 'uppercase',
+              letterSpacing: '-0.02em'
+            }}>
+              Welcome
             </h2>
-            <p style={{ color: '#94a3b8', fontSize: '0.88rem', lineHeight: 1.6, maxWidth: '340px' }}>
-              Join a community of innovative learners passionate about Artificial Intelligence and its real-world applications.
+            <p style={{
+              fontSize: '0.8rem', color: 'rgba(255,255,255,0.85)',
+              lineHeight: 1.5, margin: 0, maxWidth: '280px',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              fontWeight: 700,
+              marginBottom: '1rem'
+            }}>
+              Your Headline Name
+            </p>
+            <p style={{
+              fontSize: '0.82rem', color: 'rgba(255,255,255,0.75)',
+              lineHeight: 1.65, margin: 0, maxWidth: '270px',
+            }}>
+              Sign in to access your Mindcraft AI dashboard, track your progress, and connect with your community.
             </p>
           </div>
 
-          {/* Highlight features */}
-          <div style={{ position: 'relative', zIndex: 1, marginTop: '2rem', display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
-            {[
-              { icon: 'fa-graduation-cap', title: 'Workshops & Seminars', desc: 'Enhance your AI skills with expert training.' },
-              { icon: 'fa-laptop-code', title: 'Practical Sessions & Sprints', desc: 'Build and deploy neural networks collaboratively.' },
-              { icon: 'fa-brain', title: 'Experiential Learning', desc: 'Explore state-of-the-art tools and frameworks.' }
-            ].map((f, i) => (
-              <div key={i} style={{ display: 'flex', gap: '0.9rem', alignItems: 'flex-start' }}>
-                <div style={{
-                  width: '32px',
-                  height: '32px',
-                  borderRadius: '8px',
-                  background: 'rgba(255, 85, 0, 0.1)',
-                  border: '1px solid rgba(255, 85, 0, 0.2)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'var(--orange)',
-                  fontSize: '0.85rem',
-                  flexShrink: 0,
-                  marginTop: '0.1rem'
-                }}>
-                  <i className={`fa-solid ${f.icon}`} />
-                </div>
-                <div>
-                  <h4 style={{ fontSize: '0.83rem', fontWeight: 700, color: '#f1f5f9', margin: 0 }}>{f.title}</h4>
-                  <p style={{ fontSize: '0.74rem', color: '#64748b', margin: '0.1rem 0 0 0', lineHeight: 1.4 }}>{f.desc}</p>
-                </div>
-              </div>
+          {/* bottom tags */}
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginTop: 'auto', position: 'relative', zIndex: 1 }}>
+            {['LLMs', 'CV', 'Speech AI', 'MLOps', 'Research'].map(t => (
+              <span key={t} style={{
+                background: 'rgba(255,255,255,0.15)',
+                border: '1px solid rgba(255,255,255,0.2)',
+                borderRadius: '20px', padding: '3px 10px',
+                fontSize: '0.7rem', fontWeight: 600, color: '#fff',
+              }}>{t}</span>
             ))}
           </div>
-
-          <div style={{ position: 'relative', zIndex: 1, fontSize: '0.7rem', color: '#475569', marginTop: '2.5rem' }}>
-            © {new Date().getFullYear()} Mindcraft AI Club. All rights reserved.
-          </div>
         </div>
 
-        {/* Right Side: Form Content */}
-        <div style={{
-          padding: '3rem 3.5rem',
-          background: 'var(--card)',
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          maxHeight: '660px',
-          overflowY: 'auto'
+        {/* ══════ RIGHT — white form panel ══════ */}
+        <div className="auth-form-scroll" style={{
+          background: '#fff',
+          padding: '100px 3rem 3rem 3rem',
+          display: 'flex', flexDirection: 'column',
+          overflowY: 'auto',
+          minHeight: '100vh',
         }}>
-          {/* Sign In / Sign Up switcher tabs */}
-          <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', marginBottom: '1.75rem', position: 'relative' }}>
-            <button
-              type="button"
-              onClick={() => setActiveTab('signin')}
-              style={{
-                flex: 1, padding: '0.75rem',
-                background: 'none', border: 'none',
-                color: activeTab === 'signin' ? 'var(--orange)' : 'var(--text-muted)',
-                fontWeight: 700, cursor: 'pointer',
-                borderBottom: activeTab === 'signin' ? '2.5px solid var(--orange)' : '2.5px solid transparent',
-                transition: 'all 0.2s ease',
-                fontSize: '0.95rem'
-              }}
-            >
-              Sign In
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab('signup')}
-              style={{
-                flex: 1, padding: '0.75rem',
-                background: 'none', border: 'none',
-                color: activeTab === 'signup' ? 'var(--orange)' : 'var(--text-muted)',
-                fontWeight: 700, cursor: 'pointer',
-                borderBottom: activeTab === 'signup' ? '2.5px solid var(--orange)' : '2.5px solid transparent',
-                transition: 'all 0.2s ease',
-                fontSize: '0.95rem'
-              }}
-            >
-              Sign Up
-            </button>
-          </div>
 
-          {activeTab === 'signin' ? (
+          <div>
+            <h1 style={{ fontSize: '2rem', fontWeight: 800, color: '#0f172a', margin: '0 0 0.25rem', fontFamily: 'var(--font-display)' }}>
+              Sign in
+            </h1>
+            <p style={{ fontSize: '0.82rem', color: '#64748b', marginBottom: '2rem' }}>
+              Lorem ipsum dolor sit amet, consectetuer adipiscing elit
+            </p>
+
             <form onSubmit={handleSignIn} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-              <div className="form-group" style={{ marginBottom: 0 }}>
-                <label className="form-label" htmlFor="email" style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Email Address</label>
-                <div style={{ position: 'relative' }}>
-                  <i className="fa-solid fa-envelope" style={{ position: 'absolute', left: '0.9rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: '0.85rem' }}></i>
-                  <input
-                    type="email"
-                    className="form-input"
-                    id="email"
-                    required
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    placeholder="name@email.com"
-                    style={{ paddingLeft: '2.5rem', width: '100%', borderRadius: '10px', height: '42px', border: '1px solid var(--border)', fontSize: '0.88rem' }}
-                  />
-                </div>
-              </div>
+              <CardInput 
+                type="email" 
+                id="email" 
+                placeholder="User Name" 
+                value={form.email} 
+                onChange={set('email')} 
+                icon="fa-solid fa-user" 
+                required 
+              />
 
-              <div className="form-group" style={{ marginBottom: 0 }}>
-                <label className="form-label" htmlFor="password" style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Password</label>
-                <div style={{ position: 'relative' }}>
-                  <i className="fa-solid fa-lock" style={{ position: 'absolute', left: '0.9rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: '0.85rem' }}></i>
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    className="form-input"
-                    id="password"
-                    required
-                    value={formData.password}
-                    onChange={handleInputChange}
-                    placeholder="••••••••"
-                    style={{ paddingLeft: '2.5rem', paddingRight: '2.5rem', width: '100%', borderRadius: '10px', height: '42px', border: '1px solid var(--border)', fontSize: '0.88rem' }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(prev => !prev)}
-                    style={{
-                      position: 'absolute', right: '0.8rem', top: '50%',
-                      transform: 'translateY(-50%)',
-                      color: 'var(--text-muted)', background: 'none',
-                      border: 'none', cursor: 'pointer', padding: 0,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: '0.9rem'
-                    }}
-                  >
-                    <i className={`fa-solid ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
-                  </button>
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                className="btn btn-primary"
-                disabled={loading}
-                style={{ width: '100%', justifyContent: 'center', height: '42px', borderRadius: '10px', fontWeight: 700, marginTop: '0.5rem' }}
+              <CardInput
+                type={showPw ? 'text' : 'password'}
+                id="password" 
+                placeholder="Password"
+                value={form.password} 
+                onChange={set('password')} 
+                icon="fa-solid fa-lock" 
+                required
               >
-                {loading ? (
-                  <div className="loading-spinner" style={{ width: '18px', height: '18px', borderWidth: '2px' }}></div>
-                ) : (
-                  <>Sign In <i className="fa-solid fa-right-to-bracket" style={{ marginLeft: '0.4rem' }}></i></>
-                )}
-              </button>
-            </form>
-          ) : (
-            <form onSubmit={handleSignUp} style={{ display: 'flex', flexDirection: 'column', gap: '0.95rem' }}>
-              <div className="form-group" style={{ marginBottom: 0 }}>
-                <label className="form-label" htmlFor="name" style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Full Name *</label>
-                <div style={{ position: 'relative' }}>
-                  <i className="fa-solid fa-user" style={{ position: 'absolute', left: '0.9rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: '0.85rem' }}></i>
-                  <input
-                    type="text"
-                    className="form-input"
-                    id="name"
-                    required
-                    value={formData.name}
-                    onChange={handleInputChange}
-                    placeholder="Enter your name"
-                    style={{ paddingLeft: '2.4rem', width: '100%', borderRadius: '10px', height: '38px', border: '1px solid var(--border)', fontSize: '0.83rem' }}
-                  />
-                </div>
+                <button 
+                  type="button" 
+                  onClick={() => setShowPw(p => !p)}
+                  style={{ 
+                    color: 'var(--orange)', 
+                    fontWeight: 700, 
+                    fontSize: '0.75rem', 
+                    cursor: 'pointer', 
+                    marginLeft: '0.5rem',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em'
+                  }}
+                >
+                  {showPw ? 'HIDE' : 'SHOW'}
+                </button>
+              </CardInput>
+
+              {/* Remember me row */}
+              <div style={{ display: 'flex', alignItems: 'center', fontSize: '0.8rem', margin: '0.2rem 0' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', color: '#64748b', fontWeight: 500 }}>
+                  <input type="checkbox" checked={agreed} onChange={e => setAgreed(e.target.checked)}
+                    style={{ accentColor: 'var(--orange)', width: '15px', height: '15px', cursor: 'pointer', borderRadius: '4px' }} />
+                  Remember me
+                </label>
               </div>
 
-              {/* Class and Register Number Row */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label className="form-label" htmlFor="className" style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Class *</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    id="className"
-                    required
-                    value={formData.className}
-                    onChange={handleInputChange}
-                    placeholder="e.g. 25CS2A"
-                    style={{ width: '100%', borderRadius: '10px', height: '38px', border: '1px solid var(--border)', fontSize: '0.83rem' }}
-                  />
-                </div>
-                <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label className="form-label" htmlFor="registerNumber" style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Register Number *</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    id="registerNumber"
-                    required
-                    value={formData.registerNumber}
-                    onChange={handleInputChange}
-                    placeholder="e.g. 732925CSR001"
-                    style={{ width: '100%', borderRadius: '10px', height: '38px', border: '1px solid var(--border)', fontSize: '0.83rem' }}
-                  />
-                </div>
-              </div>
-
-              {/* Phone and Email Row */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label className="form-label" htmlFor="phone" style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Phone Number *</label>
-                  <input
-                    type="tel"
-                    className="form-input"
-                    id="phone"
-                    required
-                    value={formData.phone}
-                    onChange={handleInputChange}
-                    placeholder="Enter phone number"
-                    style={{ width: '100%', borderRadius: '10px', height: '38px', border: '1px solid var(--border)', fontSize: '0.83rem' }}
-                  />
-                </div>
-                <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label className="form-label" htmlFor="email" style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Email ID *</label>
-                  <input
-                    type="email"
-                    className="form-input"
-                    id="email"
-                    required
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    placeholder="Enter email address"
-                    style={{ width: '100%', borderRadius: '10px', height: '38px', border: '1px solid var(--border)', fontSize: '0.83rem' }}
-                  />
-                </div>
-              </div>
-
-              <div className="form-group" style={{ marginBottom: 0 }}>
-                <label className="form-label" htmlFor="password" style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Password * (Min 6 chars)</label>
-                <div style={{ position: 'relative' }}>
-                  <i className="fa-solid fa-lock" style={{ position: 'absolute', left: '0.9rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: '0.85rem' }}></i>
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    className="form-input"
-                    id="password"
-                    required
-                    value={formData.password}
-                    onChange={handleInputChange}
-                    placeholder="••••••••"
-                    minLength={6}
-                    style={{ paddingLeft: '2.4rem', paddingRight: '2.5rem', width: '100%', borderRadius: '10px', height: '38px', border: '1px solid var(--border)', fontSize: '0.83rem' }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(prev => !prev)}
-                    style={{
-                      position: 'absolute', right: '0.8rem', top: '50%',
-                      transform: 'translateY(-50%)',
-                      color: 'var(--text-muted)', background: 'none',
-                      border: 'none', cursor: 'pointer', padding: 0,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: '0.9rem'
-                    }}
-                  >
-                    <i className={`fa-solid ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
-                  </button>
-                </div>
-              </div>
-
-              <div className="form-group" style={{ marginBottom: 0 }}>
-                <label className="form-label" htmlFor="interestedArea" style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Interested Area</label>
-                <input
-                  type="text"
-                  className="form-input"
-                  id="interestedArea"
-                  value={formData.interestedArea}
-                  onChange={handleInputChange}
-                  placeholder="e.g. NLP, Computer Vision, MLOps"
-                  style={{ width: '100%', borderRadius: '10px', height: '38px', border: '1px solid var(--border)', fontSize: '0.83rem' }}
-                />
-              </div>
-
-              {/* Coding Style Vibe Poll */}
-              <div>
-                <label className="form-label" style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.4rem', display: 'block' }}>Choose Your Style / Vibe *</label>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.6rem' }}>
-                  {[
-                    { id: 'hard_coding', label: '💻 Hard Coding', desc: 'Writing pure, manual code' },
-                    { id: 'vibe_coding', label: '🎵 Vibe Coding', desc: 'Using AI tools & prompt flow' },
-                    { id: 'exploring',   label: '🔍 Exploring',   desc: 'Testing ideas and research' },
-                    { id: 'ai_or_other',  label: '🤖 AI & Tech',   desc: 'AI, data science or other fields' },
-                  ].map(opt => {
-                    const isSel = formData.codingStyle === opt.id;
-                    return (
-                      <div
-                        key={opt.id}
-                        onClick={() => setFormData(prev => ({ ...prev, codingStyle: opt.id }))}
-                        style={{
-                          border: `1px solid ${isSel ? 'var(--orange)' : 'var(--border)'}`,
-                          background: isSel ? 'rgba(255,85,0,0.03)' : 'var(--surface)',
-                          borderRadius: '10px',
-                          padding: '0.5rem 0.75rem',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '0.1rem',
-                          transition: 'all 0.2s ease',
-                          textAlign: 'left',
-                          boxShadow: isSel ? '0 0 0 2px rgba(255,85,0,0.1)' : 'none'
-                        }}
-                      >
-                        <span style={{ fontSize: '0.76rem', fontWeight: 700, color: isSel ? 'var(--orange)' : 'var(--text)' }}>
-                          {opt.label}
-                        </span>
-                        <span style={{ fontSize: '0.64rem', color: 'var(--text-secondary)' }}>
-                          {opt.desc}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                className="btn btn-primary"
-                disabled={loading}
-                style={{ width: '100%', justifyContent: 'center', height: '40px', borderRadius: '10px', fontWeight: 700, marginTop: '0.5rem' }}
+              <button type="submit" disabled={loading} style={{
+                background: 'var(--orange)', 
+                color: '#fff', border: 'none', borderRadius: '8px',
+                padding: '0.75rem', fontSize: '0.9rem', fontWeight: 700,
+                cursor: 'pointer', width: '100%',
+                transition: 'all 0.15s',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                boxShadow: 'var(--shadow-sm)'
+              }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'var(--orange-dark)'; e.currentTarget.style.transform = 'translateY(-1px)'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'var(--orange)'; e.currentTarget.style.transform = 'none'; }}
               >
-                {loading ? (
-                  <div className="loading-spinner" style={{ width: '18px', height: '18px', borderWidth: '2px' }}></div>
-                ) : (
-                  <>Submit Application <i className="fa-solid fa-user-plus" style={{ marginLeft: '0.4rem' }}></i></>
-                )}
+                {loading
+                  ? <span className="auth-spinner" />
+                  : 'Sign in'
+                }
               </button>
+
+              <p style={{ textAlign: 'center', fontSize: '0.82rem', color: '#64748b', marginTop: '0.75rem' }}>
+                Don't have an account?{' '}
+                <span onClick={() => navigate('/signup')}
+                  style={{ color: 'var(--orange)', fontWeight: 700, cursor: 'pointer' }}>
+                  Sign Up
+                </span>
+              </p>
             </form>
-          )}
+          </div>
         </div>
-
       </div>
 
+      {/* ── global styles ── */}
       <style>{`
-        .premium-auth-card {
-          min-height: 520px;
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .auth-spinner {
+          display: inline-block;
+          width: 18px; height: 18px;
+          border: 2.5px solid rgba(255,255,255,0.35);
+          border-top-color: #fff;
+          border-radius: 50%;
+          animation: spin 0.65s linear infinite;
         }
+        .auth-form-scroll::-webkit-scrollbar { width: 4px; }
+        .auth-form-scroll::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 8px; }
+        .auth-form-scroll::-webkit-scrollbar-thumb:hover { background: var(--orange); }
         @media (max-width: 768px) {
-          .premium-auth-card {
+          .auth-split-card {
             grid-template-columns: 1fr !important;
-            max-width: 480px !important;
           }
-          .premium-auth-card > div:first-child {
+          .auth-split-card > div:first-child {
             display: none !important;
           }
-          .premium-auth-card > div:last-child {
-            padding: 2rem 1.75rem !important;
+          .auth-form-scroll {
+            padding: 2.5rem 1.8rem !important;
           }
-        }
-        .premium-auth-card > div:last-child::-webkit-scrollbar {
-          width: 4px;
-        }
-        .premium-auth-card > div:last-child::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        .premium-auth-card > div:last-child::-webkit-scrollbar-thumb {
-          background: var(--border);
-          border-radius: 10px;
-        }
-        .premium-auth-card > div:last-child::-webkit-scrollbar-thumb:hover {
-          background: var(--orange);
         }
       `}</style>
     </div>

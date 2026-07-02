@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import db from './db';
 import Header from './components/Header';
 import Toast from './components/Toast';
@@ -16,8 +16,12 @@ import Tasks from './pages/Tasks';
 import Contact from './pages/Contact';
 import Admin from './pages/Admin';
 import Auth from './pages/Auth';
+import Signup from './pages/Signup';
 
 export default function App() {
+  const location = useLocation();
+  const isFullscreenPage = location.pathname === '/auth' || location.pathname === '/signup';
+
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [toasts, setToasts] = useState([]);
@@ -54,6 +58,29 @@ export default function App() {
     return children;
   };
 
+  if (isFullscreenPage) {
+    return (
+      <div style={{ position: 'relative', minHeight: '100vh', width: '100vw', overflow: 'hidden' }}>
+        {authLoading ? (
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+            <div className="loading-spinner"></div>
+          </div>
+        ) : (
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/auth" element={<Auth user={user} />} />
+            <Route path="/signup" element={<Signup user={user} />} />
+          </Routes>
+        )}
+        <div id="toast-container" className="toast-container">
+          {toasts.map((toast) => (
+            <Toast key={toast.id} id={toast.id} title={toast.title} message={toast.message} type={toast.type} onClose={removeToast} />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={{ display: 'flex', minHeight: '100vh', flexDirection: 'column', position: 'relative' }}>
 
@@ -75,6 +102,7 @@ export default function App() {
             <Route path="/winners" element={<Winners />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/auth" element={<Auth user={user} />} />
+            <Route path="/signup" element={<Signup user={user} />} />
             <Route path="/quiz" element={<ProtectedRoute><Quiz user={user} /></ProtectedRoute>} />
             <Route path="/tasks" element={<ProtectedRoute><Tasks user={user} /></ProtectedRoute>} />
             <Route path="/admin" element={<ProtectedRoute roleRequired="admin"><Admin user={user} /></ProtectedRoute>} />

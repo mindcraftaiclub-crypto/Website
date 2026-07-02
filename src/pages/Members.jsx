@@ -78,15 +78,12 @@ export default function Members() {
                           width: '100%',
                           height: '100%',
                           objectFit: 'cover',
-                          filter: 'grayscale(100%) contrast(1.05)',
                           transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)'
                         }}
                         onMouseEnter={e => {
-                          e.currentTarget.style.filter = 'grayscale(0%) contrast(1)';
                           e.currentTarget.style.transform = 'scale(1.04)';
                         }}
                         onMouseLeave={e => {
-                          e.currentTarget.style.filter = 'grayscale(100%) contrast(1.05)';
                           e.currentTarget.style.transform = 'scale(1)';
                         }}
                       />

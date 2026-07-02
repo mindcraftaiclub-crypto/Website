@@ -17,7 +17,9 @@ import {
   getDoc,
   setDoc,
   updateDoc,
-  deleteDoc
+  deleteDoc,
+  query,
+  where
 } from "firebase/firestore";
 import { createClient } from "@supabase/supabase-js";
 
@@ -110,7 +112,7 @@ const initialCollections = {
     { id: 'win_2', name: 'Alice Johnson', department: 'Computer Science', achievement: 'Fastest Deduplication Algorithm optimization (Task #2)', photo: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150', certificate: 'https://example.com/cert/deduplication-opt' },
   ],
   CoreMembers: [
-    { id: 'core_1', name: 'Athi', role: 'President', department: 'Computer Science', year: '4', email: 'Athi9080@.com', github: 'https://github.com', linkedin: 'https://linkedin.com/in/club-mindcraft-ai-95b2b8377/', photo: 'https://ui-avatars.com/api/?name=Athi&background=ff5500&color=fff' },
+    { id: 'core_1', name: 'Athi', role: 'President', department: 'Computer Science', year: '4', email: 'Athi9080@.com', github: 'https://github.com', linkedin: 'https://www.linkedin.com/company/mindcraft-ai-vcet', photo: 'https://ui-avatars.com/api/?name=Athi&background=ff5500&color=fff' },
   ],
   JoinFormFields: [],
   Settings: {
@@ -154,6 +156,27 @@ const addDeletedId = (id) => {
     if (!ids.includes(id)) {
       ids.push(id);
       localStorage.setItem(DELETED_IDS_KEY, JSON.stringify(ids));
+    }
+  } catch { /* ignore */ }
+};
+
+const DELETED_EMAILS_KEY = 'mindcraft_deleted_emails';
+
+const getDeletedEmails = () => {
+  try {
+    const data = localStorage.getItem(DELETED_EMAILS_KEY);
+    return data ? JSON.parse(data) : [];
+  } catch { return []; }
+};
+
+const addDeletedEmail = (email) => {
+  if (!email) return;
+  try {
+    const emails = getDeletedEmails();
+    const cleanEmail = email.toLowerCase().trim();
+    if (!emails.includes(cleanEmail)) {
+      emails.push(cleanEmail);
+      localStorage.setItem(DELETED_EMAILS_KEY, JSON.stringify(emails));
     }
   } catch { /* ignore */ }
 };
@@ -245,7 +268,7 @@ class FirebaseDatabase {
                 year: '1',
                 position: 'Member',
                 skills: [],
-                linkedin: 'https://linkedin.com/in/club-mindcraft-ai-95b2b8377/',
+                linkedin: 'https://www.linkedin.com/company/mindcraft-ai-vcet',
                 github: 'https://github.com',
                 photo: firebaseUser.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(firebaseUser.displayName || firebaseUser.email.split('@')[0])}&background=ff5500&color=fff`,
                 verified: true
@@ -306,13 +329,27 @@ class FirebaseDatabase {
       const snapshot = await getDocs(colRef);
       const data = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
       const deletedIds = getDeletedIds();
-      const filtered = data.filter(item => !deletedIds.includes(item.id) && item.isDeleted !== true);
+      const deletedEmails = getDeletedEmails();
+      const filtered = data.filter(item => {
+        if (deletedIds.includes(item.id) || item.isDeleted === true) return false;
+        if (collectionName === 'Users' && item.email && deletedEmails.includes(item.email.toLowerCase().trim())) {
+          return false;
+        }
+        return true;
+      });
       return deduplicateUsers(filtered);
     } catch (error) {
       console.warn(`find(${collectionName}) failed, using fallback:`, error.message);
       const localData = getLocalStorageCollection(collectionName);
       const deletedIds = getDeletedIds();
-      const filtered = localData.filter(item => !deletedIds.includes(item.id) && item.isDeleted !== true);
+      const deletedEmails = getDeletedEmails();
+      const filtered = localData.filter(item => {
+        if (deletedIds.includes(item.id) || item.isDeleted === true) return false;
+        if (collectionName === 'Users' && item.email && deletedEmails.includes(item.email.toLowerCase().trim())) {
+          return false;
+        }
+        return true;
+      });
       return deduplicateUsers(filtered);
     }
   }
@@ -390,20 +427,43 @@ class FirebaseDatabase {
   }
 
   async delete(collectionName, id) {
-    addDeletedId(id);
     const items = getLocalStorageCollection(collectionName);
-    setLocalStorageCollection(collectionName, items.filter(item => item.id !== id));
-    try {
-      try {
-        const docRef = doc(firestore, collectionName, id);
-        await updateDoc(docRef, { isDeleted: true, updatedAt: new Date().toISOString() });
-      } catch (softErr) {
-        console.warn("Soft delete Firestore update failed:", softErr.message);
-      }
-      await deleteDoc(doc(firestore, collectionName, id));
-    } catch (error) {
-      console.warn(`Firestore delete failed for ${id} in ${collectionName} (handled via client-side blacklist):`, error.message);
+    let emailToBlacklist = null;
+
+    if (collectionName === 'Users' || collectionName === 'CoreMembers') {
+      const match = items.find(item => item.id === id);
+      if (match && match.email) emailToBlacklist = match.email;
     }
+
+    // 1. Direct Firestore deletion (raises exception on failure)
+    const docRef = doc(firestore, collectionName, id);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists() && docSnap.data().email) {
+      emailToBlacklist = docSnap.data().email;
+    }
+    await deleteDoc(docRef);
+
+    // 2. Local cache updates (only executed if Firestore deletion succeeds)
+    addDeletedId(id);
+    setLocalStorageCollection(collectionName, items.filter(item => item.id !== id));
+
+    if (emailToBlacklist && (collectionName === 'Users' || collectionName === 'CoreMembers')) {
+      const cleanEmail = emailToBlacklist.toLowerCase().trim();
+      addDeletedEmail(cleanEmail);
+
+      const filteredItems = items.filter(item => item.id !== id && (item.email || '').toLowerCase().trim() !== cleanEmail);
+      setLocalStorageCollection(collectionName, filteredItems);
+
+      // Query delete all duplicate documents in Firestore sharing the same email
+      const colRef = collection(firestore, collectionName);
+      const q = query(colRef, where('email', '==', emailToBlacklist));
+      const snap = await getDocs(q);
+      await Promise.all(snap.docs.map(async (d) => {
+        addDeletedId(d.id);
+        await deleteDoc(d.ref);
+      }));
+    }
+
     return { id };
   }
 
