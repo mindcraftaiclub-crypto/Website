@@ -557,6 +557,33 @@ function DashboardTab() {
   requests.forEach(r => addInterest(r.interestedArea || r.interests));
   const topInterests = Object.entries(interestCounts).sort((a, b) => b[1] - a[1]).slice(0, 12);
 
+  const handleDownloadReach = () => {
+    const formattedMembers = members.map(m => ({
+      Name: m.name || '',
+      Email: m.email || '',
+      Phone: m.phone || '',
+      'Class Name': m.className || '',
+      'Register Number': m.registerNumber || '',
+      'Type': 'Registered Member',
+      'Interested Area': m.interestedArea || '',
+      'Coding Style': m.codingStyle ? m.codingStyle.replace('_', ' ') : ''
+    }));
+
+    const formattedRequests = requests.map(r => ({
+      Name: r.name || '',
+      Email: r.email || '',
+      Phone: r.phone || '',
+      'Class Name': r.className || '',
+      'Register Number': r.registerNumber || '',
+      'Type': `Interested Student (${r.status || 'Pending'})`,
+      'Interested Area': r.interestedArea || r.interests || '',
+      'Coding Style': r.codingStyle ? r.codingStyle.replace('_', ' ') : ''
+    }));
+
+    const combined = [...formattedMembers, ...formattedRequests];
+    downloadCSV(combined, `total_club_reach_${new Date().toISOString().slice(0, 10)}.csv`);
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
       {/* ── Summary Stats cards ── */}
@@ -581,14 +608,17 @@ function DashboardTab() {
           </div>
         </div>
 
-        <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14, padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1.25rem', boxShadow: 'var(--shadow-sm)' }}>
+        <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14, padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1.25rem', boxShadow: 'var(--shadow-sm)', position: 'relative' }}>
           <div style={{ width: 48, height: 48, borderRadius: 12, background: 'rgba(16, 185, 129, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10b981', fontSize: '1.4rem', flexShrink: 0 }}>
             <i className="fa-solid fa-circle-check" />
           </div>
-          <div>
+          <div style={{ flex: 1 }}>
             <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--text)', lineHeight: 1.1 }}>{members.length + requests.length}</div>
             <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginTop: '2px', fontWeight: 600 }}>Total Club Reach</div>
           </div>
+          <button onClick={handleDownloadReach} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '0.45rem 0.75rem', color: 'var(--text-secondary)', fontSize: '0.74rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.35rem', transition: 'all 0.2s', flexShrink: 0 }} onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--orange)'; e.currentTarget.style.color = 'var(--orange)'; }} onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-secondary)'; }}>
+            <i className="fa-solid fa-file-excel" style={{ color: '#107c41' }} /> Export
+          </button>
         </div>
       </div>
 
