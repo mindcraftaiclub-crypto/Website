@@ -356,6 +356,9 @@ function EventsTab() {
   const [loading, setLoading] = useState(true);
   const [form, setForm] = useState({ title: '', date: '', venue: '', description: '', poster: '' });
   const [saving, setSaving] = useState(false);
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState('');
+  const fileRef = useRef();
 
   const load = async () => {
     try { setEvents((await db.find('Events')).sort((a, b) => new Date(b.date) - new Date(a.date))); }
@@ -365,13 +368,34 @@ function EventsTab() {
 
   useEffect(() => { load(); }, []);
 
+  const handleImageChange = e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+  };
+
   const handleAdd = async () => {
     if (!form.title || !form.date) { window.showToast('Missing Fields', 'Title and Date are required.', 'error'); return; }
     setSaving(true);
     try {
-      await db.insert('Events', { ...form, createdAt: new Date().toISOString() });
+      let posterUrl = form.poster;
+
+      if (imageFile) {
+        const ext = imageFile.name.split('.').pop();
+        const path = `events/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+        const { error: uploadError } = await supabaseServiceClient.storage.from('member_photos').upload(path, imageFile, { upsert: true });
+        if (uploadError) throw new Error(uploadError.message);
+        const { data: { publicUrl } } = supabaseServiceClient.storage.from('member_photos').getPublicUrl(path);
+        posterUrl = publicUrl;
+      }
+
+      await db.insert('Events', { ...form, poster: posterUrl, createdAt: new Date().toISOString() });
       window.showToast('Event Added!', form.title, 'success');
       setForm({ title: '', date: '', venue: '', description: '', poster: '' });
+      setImageFile(null);
+      setImagePreview('');
+      if (fileRef.current) fileRef.current.value = '';
       load();
     } catch (err) { window.showToast('Error', err.message, 'error'); }
     finally { setSaving(false); }
@@ -389,11 +413,40 @@ function EventsTab() {
         <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1.25rem', color: 'var(--text)' }}>
           <i className="fa-solid fa-calendar-plus" style={{ color: 'var(--orange)', marginRight: '0.5rem' }} />Add Event
         </h3>
+
+        {/* Poster Image Upload */}
+        <div style={{ marginBottom: '1rem', textAlign: 'center' }}>
+          <div onClick={() => fileRef.current?.click()} style={{
+            width: '100%',
+            height: '130px',
+            borderRadius: '10px',
+            background: 'var(--surface)',
+            border: `2px dashed ${imagePreview ? 'var(--orange)' : 'var(--border)'}`,
+            overflow: 'hidden',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'border-color 0.25s',
+            marginBottom: '0.5rem'
+          }}>
+            {imagePreview ? (
+              <img src={imagePreview} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem', color: 'var(--text-secondary)' }}>
+                <i className="fa-solid fa-image" style={{ fontSize: '1.6rem', color: 'var(--text-muted)' }} />
+                <span style={{ fontSize: '0.74rem', fontWeight: 600 }}>Click to Upload Event Poster</span>
+              </div>
+            )}
+          </div>
+          <input ref={fileRef} type="file" accept="image/*" onChange={handleImageChange} style={{ display: 'none' }} />
+        </div>
+
         {[
           { key: 'title', placeholder: 'Event Title *', type: 'text' },
           { key: 'date', placeholder: 'Date *', type: 'date' },
           { key: 'venue', placeholder: 'Venue / Location', type: 'text' },
-          { key: 'poster', placeholder: 'Poster URL (optional)', type: 'text' },
+          { key: 'poster', placeholder: 'Poster URL (optional fallback)', type: 'text' },
         ].map(({ key, placeholder, type }) => (
           <input key={key} type={type} value={form[key]} onChange={e => setForm(p => ({ ...p, [key]: e.target.value }))} placeholder={placeholder}
             style={{ width: '100%', padding: '0.65rem 0.9rem', border: '1px solid var(--border)', borderRadius: 8, fontSize: '0.88rem', color: 'var(--text)', background: 'var(--surface)', marginBottom: '0.65rem' }} />
