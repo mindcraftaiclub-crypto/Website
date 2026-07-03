@@ -5,7 +5,7 @@ const TABS = [
   { id: 'members',      label: 'Members',       icon: 'fa-users' },
   { id: 'core',         label: 'Core Board',    icon: 'fa-star' },
   { id: 'events',       label: 'Events',        icon: 'fa-calendar' },
-  { id: 'requests',     label: 'Applications',  icon: 'fa-file-signature' },
+  { id: 'dashboard',    label: 'Dashboard',     icon: 'fa-chart-pie' },
   { id: 'winners',      label: 'Winners',       icon: 'fa-trophy' },
 ];
 
@@ -483,6 +483,221 @@ function EventsTab() {
   );
 }
 
+/* ═══════════════════════════════════ DASHBOARD TAB ═══════════════════════════════════ */
+function DashboardTab() {
+  const [loading, setLoading] = useState(true);
+  const [members, setMembers] = useState([]);
+  const [requests, setRequests] = useState([]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const u = await db.find('Users');
+        const r = await db.find('JoinRequests');
+        setMembers(u);
+        setRequests(r);
+      } catch (err) {
+        window.showToast('Error', 'Could not load dashboard data.', 'error');
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
+  if (loading) return <div className="loading-spinner" />;
+
+  // 1. Class-wise counts (Registered Members)
+  const classCounts = {};
+  members.forEach(m => {
+    const cName = (m.className || 'Unknown').trim();
+    classCounts[cName] = (classCounts[cName] || 0) + 1;
+  });
+  const sortedClasses = Object.entries(classCounts).sort((a, b) => b[1] - a[1]);
+
+  // 2. Coding style visual analysis (All registered members + applicants)
+  const codingStyleCounts = {
+    hard_coding: 0,
+    vibe_coding: 0,
+    exploring: 0,
+    ai_or_other: 0
+  };
+  members.forEach(m => {
+    if (m.codingStyle && codingStyleCounts[m.codingStyle] !== undefined) {
+      codingStyleCounts[m.codingStyle]++;
+    }
+  });
+  requests.forEach(r => {
+    if (r.codingStyle && codingStyleCounts[r.codingStyle] !== undefined) {
+      codingStyleCounts[r.codingStyle]++;
+    }
+  });
+  const totalStyleVotes = Object.values(codingStyleCounts).reduce((a, b) => a + b, 0);
+
+  const styleDetails = [
+    { id: 'hard_coding', label: '💻 Hard Coding', desc: 'Pure, manual code', color: '#6366f1' },
+    { id: 'vibe_coding', label: '🎵 Vibe Coding', desc: 'AI tools & prompts', color: '#f97316' },
+    { id: 'exploring',   label: '🔍 Exploring',    desc: 'Ideas & research', color: '#14b8a6' },
+    { id: 'ai_or_other', label: '🤖 AI & Tech',    desc: 'Data science & AI', color: '#a855f7' },
+  ];
+
+  // 3. Interested Areas (All registered members + applicants)
+  const interestCounts = {};
+  const addInterest = (str) => {
+    if (!str) return;
+    str.split(',').forEach(item => {
+      let key = item.trim();
+      // Capitalize first letter of each word
+      key = key.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+      if (key) {
+        interestCounts[key] = (interestCounts[key] || 0) + 1;
+      }
+    });
+  };
+  members.forEach(m => addInterest(m.interestedArea));
+  requests.forEach(r => addInterest(r.interestedArea || r.interests));
+  const topInterests = Object.entries(interestCounts).sort((a, b) => b[1] - a[1]).slice(0, 12);
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+      {/* ── Summary Stats cards ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.25rem' }}>
+        <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14, padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1.25rem', boxShadow: 'var(--shadow-sm)' }}>
+          <div style={{ width: 48, height: 48, borderRadius: 12, background: 'rgba(59, 130, 246, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2563eb', fontSize: '1.4rem', flexShrink: 0 }}>
+            <i className="fa-solid fa-user-check" />
+          </div>
+          <div>
+            <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--text)', lineHeight: 1.1 }}>{members.length}</div>
+            <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginTop: '2px', fontWeight: 600 }}>Registered Members</div>
+          </div>
+        </div>
+
+        <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14, padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1.25rem', boxShadow: 'var(--shadow-sm)' }}>
+          <div style={{ width: 48, height: 48, borderRadius: 12, background: 'rgba(249, 115, 22, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f97316', fontSize: '1.4rem', flexShrink: 0 }}>
+            <i className="fa-solid fa-heart" />
+          </div>
+          <div>
+            <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--text)', lineHeight: 1.1 }}>{requests.length}</div>
+            <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginTop: '2px', fontWeight: 600 }}>Interested Students</div>
+          </div>
+        </div>
+
+        <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14, padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1.25rem', boxShadow: 'var(--shadow-sm)' }}>
+          <div style={{ width: 48, height: 48, borderRadius: 12, background: 'rgba(16, 185, 129, 0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10b981', fontSize: '1.4rem', flexShrink: 0 }}>
+            <i className="fa-solid fa-circle-check" />
+          </div>
+          <div>
+            <div style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--text)', lineHeight: 1.1 }}>{members.length + requests.length}</div>
+            <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginTop: '2px', fontWeight: 600 }}>Total Club Reach</div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Main content grid ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '1.5rem' }} className="admin-grid-layout">
+        {/* Left Card: Coding Style Visual Analysis */}
+        <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14, padding: '1.75rem', boxShadow: 'var(--shadow-sm)', display: 'flex', flexDirection: 'column' }}>
+          <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <i className="fa-solid fa-chart-column" style={{ color: 'var(--orange)' }} />
+            Coding Style Preferences
+          </h3>
+          <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: '1.75rem' }}>
+            Visual analysis of how club members and applicants approach coding (out of {totalStyleVotes} total selections).
+          </p>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', flex: 1, justifyContent: 'center' }}>
+            {styleDetails.map(style => {
+              const count = codingStyleCounts[style.id] || 0;
+              const pct = totalStyleVotes > 0 ? Math.round((count / totalStyleVotes) * 100) : 0;
+              return (
+                <div key={style.id} style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                    <div>
+                      <span style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--text)' }}>{style.label}</span>
+                      <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginLeft: '0.4rem' }}>— {style.desc}</span>
+                    </div>
+                    <span style={{ fontWeight: 800, fontSize: '0.88rem', color: style.color }}>{count} ({pct}%)</span>
+                  </div>
+                  <div style={{ width: '100%', height: '10px', background: 'var(--surface)', borderRadius: '5px', overflow: 'hidden' }}>
+                    <div style={{ width: `${pct}%`, height: '100%', background: style.color, borderRadius: '5px', transition: 'width 0.8s ease' }} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Right Column: Class breakdown & Interests */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          {/* Class-wise Separation */}
+          <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14, padding: '1.5rem', boxShadow: 'var(--shadow-sm)' }}>
+            <h3 style={{ fontSize: '0.96rem', fontWeight: 800, color: 'var(--text)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <i className="fa-solid fa-graduation-cap" style={{ color: 'var(--orange)' }} />
+              Class-wise Distribution
+            </h3>
+            
+            {sortedClasses.length === 0 ? (
+              <div style={{ padding: '1.5rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.8rem' }}>No registered class data available.</div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '240px', overflowY: 'auto', paddingRight: '4px' }}>
+                {sortedClasses.map(([cName, count]) => (
+                  <div key={cName} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.5rem 0.75rem', background: 'var(--surface)', borderRadius: 8, border: '1px solid var(--border-light)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <i className="fa-solid fa-circle-user" style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }} />
+                      <span style={{ fontWeight: 700, fontSize: '0.82rem', color: 'var(--text)' }}>{cName}</span>
+                    </div>
+                    <span style={{
+                      background: 'var(--orange)',
+                      color: '#fff',
+                      fontSize: '0.74rem',
+                      fontWeight: 800,
+                      padding: '0.15rem 0.5rem',
+                      borderRadius: '10px'
+                    }}>
+                      {count} {count === 1 ? 'member' : 'members'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Top Interests */}
+          <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14, padding: '1.5rem', boxShadow: 'var(--shadow-sm)' }}>
+            <h3 style={{ fontSize: '0.96rem', fontWeight: 800, color: 'var(--text)', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <i className="fa-solid fa-brain" style={{ color: 'var(--orange)' }} />
+              Student Interests / Areas
+            </h3>
+            
+            {topInterests.length === 0 ? (
+              <div style={{ padding: '1.5rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.8rem' }}>No interest area data available.</div>
+            ) : (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.45rem' }}>
+                {topInterests.map(([interest, count]) => (
+                  <div key={interest} style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.35rem',
+                    background: 'rgba(255, 85, 0, 0.06)',
+                    border: '1px solid rgba(255, 85, 0, 0.12)',
+                    borderRadius: '8px',
+                    padding: '0.3rem 0.6rem',
+                    fontSize: '0.74rem',
+                    fontWeight: 700,
+                    color: 'var(--text)'
+                  }}>
+                    <span>{interest}</span>
+                    <span style={{ color: 'var(--orange)', fontSize: '0.72rem', fontWeight: 800 }}>({count})</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ═══════════════════════════════════ ANNOUNCEMENTS TAB ═══════════════════════════════════ */
 
 
@@ -881,7 +1096,7 @@ export default function Admin({ user }) {
       {tab === 'members'       && <MembersTab />}
       {tab === 'core'          && <CoreBoardTab allMembers={members} />}
       {tab === 'events'        && <EventsTab />}
-      {tab === 'requests'      && <RequestsTab />}
+      {tab === 'dashboard'     && <DashboardTab />}
       {tab === 'winners'       && <WinnersTab />}
     </div>
   );
