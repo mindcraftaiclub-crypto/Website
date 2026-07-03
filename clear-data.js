@@ -3,6 +3,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { initializeApp } from 'firebase/app';
 import { getFirestore, collection, getDocs, deleteDoc, doc } from 'firebase/firestore';
+import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
 
 // Setup file paths for ES Module environment
 const __filename = fileURLToPath(import.meta.url);
@@ -66,6 +67,16 @@ const COLLECTIONS_TO_CLEAR = [
 
 async function clearCollections() {
   console.log('\n--- START DATABASE CLEANUP ---');
+  
+  try {
+    const auth = getAuth(app);
+    console.log('Authenticating as Admin (mindcraftaiclub@gmail.com)...');
+    await signInWithEmailAndPassword(auth, 'mindcraftaiclub@gmail.com', 'Mind2025@');
+    console.log('Authentication Successful!');
+  } catch (authError) {
+    console.error('Authentication Failed:', authError.message);
+    console.error('Continuing without authentication (this may fail if security rules block it)...');
+  }
   
   for (const colName of COLLECTIONS_TO_CLEAR) {
     try {
