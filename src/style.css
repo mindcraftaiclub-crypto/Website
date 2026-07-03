@@ -1,5 +1,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap');
-
+*{
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
 /* ═══════════════════════════════════════════
    DESIGN TOKENS — PROFESSIONAL WHITE MODE
 ═══════════════════════════════════════════ */
@@ -547,6 +551,10 @@ h1, h2, h3, h4 {
   min-width: 0;
   position: relative;
   z-index: 1;
+}
+
+.main-content.home-main-content {
+  padding: 0;
 }
 
 .page-header { margin-bottom: 2.5rem; }

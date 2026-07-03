@@ -12,6 +12,8 @@ export default function Home() {
   const [currentUser, setCurrentUser] = useState(null);
   const heroTextRef = useRef(null);
   const [heroTextVisible, setHeroTextVisible] = useState(false);
+  const [winners, setWinners] = useState([]);
+  const [modal, setModal] = useState({ active: false, name: '', achievement: '' });
 
   useEffect(() => {
     // Simple intersection observer for hero entry
@@ -26,6 +28,16 @@ export default function Home() {
     // Fetch current user session
     const session = db.getCurrentUser();
     setCurrentUser(session);
+
+    // Fetch weekly winners
+    (async () => {
+      try {
+        const list = await db.find('WeeklyWinners');
+        setWinners(list);
+      } catch (err) {
+        console.error('Error loading weekly winners:', err);
+      }
+    })();
 
     return () => obs.disconnect();
   }, []);
@@ -74,6 +86,56 @@ export default function Home() {
         }
         .landing-header-link:hover::after {
           width: 100%;
+        }
+
+        .sphere {
+          position: absolute;
+          border-radius: 50%;
+          background: radial-gradient(circle at 30% 30%, #ffaa66 0%, var(--orange) 60%, var(--orange-dark) 100%);
+          box-shadow: inset -12px -12px 30px rgba(0, 0, 0, 0.35), 
+                      inset 8px 8px 20px rgba(255, 255, 255, 0.25), 
+                      0 25px 50px rgba(204, 68, 0, 0.2);
+          z-index: 0;
+          pointer-events: none;
+        }
+
+        .sphere-tr {
+          top: -40px;
+          right: -40px;
+          width: clamp(120px, 18vw, 260px);
+          height: clamp(120px, 18vw, 260px);
+          animation: float-tr 12s ease-in-out infinite;
+        }
+
+        .sphere-br {
+          bottom: 60px;
+          right: 3%;
+          width: clamp(80px, 10vw, 150px);
+          height: clamp(80px, 10vw, 150px);
+          animation: float-br 10s ease-in-out infinite;
+          animation-delay: 1.5s;
+        }
+
+        .sphere-bl {
+          bottom: -50px;
+          left: -40px;
+          width: clamp(100px, 14vw, 200px);
+          height: clamp(100px, 14vw, 200px);
+          animation: float-bl 11s ease-in-out infinite;
+          animation-delay: 3s;
+        }
+
+        @keyframes float-tr {
+          0%, 100% { transform: translate(0, 0) rotate(0deg); }
+          50% { transform: translate(-10px, 15px) rotate(3deg); }
+        }
+        @keyframes float-br {
+          0%, 100% { transform: translate(0, 0) rotate(0deg); }
+          50% { transform: translate(-15px, -10px) rotate(-3deg); }
+        }
+        @keyframes float-bl {
+          0%, 100% { transform: translate(0, 0) rotate(0deg); }
+          50% { transform: translate(15px, -15px) rotate(2deg); }
         }
 
         /* ── RESPONSIVE CLASSES ── */
@@ -186,6 +248,319 @@ export default function Home() {
             font-size: 2rem !important;
           }
         }
+
+        /* ── WEEKLY WINNERS SECTION ── */
+        .celebration-section {
+          background: radial-gradient(circle at center, rgba(255, 85, 0, 0.04) 0%, rgba(255, 255, 255, 1) 75%);
+          padding: 6rem 2rem;
+          text-align: center;
+          position: relative;
+          overflow: hidden;
+          border-bottom: 1px solid var(--border-light);
+        }
+
+        .celebration-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.5rem;
+          font-size: 0.76rem;
+          font-weight: 750;
+          text-transform: uppercase;
+          letter-spacing: 0.15em;
+          color: var(--orange);
+          background: rgba(255, 85, 0, 0.08);
+          padding: 0.45rem 1.1rem;
+          border-radius: 50px;
+          margin-bottom: 1.25rem;
+        }
+
+        .polaroid-grid {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 3rem;
+          max-width: 1200px;
+          margin: 0 auto;
+          position: relative;
+          z-index: 2;
+          justify-content: center;
+        }
+
+        .polaroid-card {
+          background: #ffffff;
+          border: 1px solid var(--border-light);
+          padding: 1.25rem 1.25rem 2.2rem 1.25rem;
+          box-shadow: 0 15px 35px rgba(0, 0, 0, 0.06);
+          transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          text-align: center;
+          position: relative;
+          width: 290px;
+        }
+
+        .polaroid-card:hover {
+          transform: translateY(-12px) rotate(0deg) scale(1.03) !important;
+          box-shadow: 0 25px 45px rgba(255, 85, 0, 0.12);
+          border-color: rgba(255, 85, 0, 0.2);
+          z-index: 5;
+        }
+
+        .polaroid-card:nth-child(even) {
+          transform: rotate(2deg);
+        }
+
+        .polaroid-card:nth-child(odd) {
+          transform: rotate(-2deg);
+        }
+
+        .polaroid-photo-wrapper {
+          width: 100%;
+          aspect-ratio: 1 / 1;
+          overflow: hidden;
+          background: var(--surface);
+          border: 1px solid var(--border-light);
+          margin-bottom: 1.25rem;
+          position: relative;
+        }
+
+        .polaroid-photo {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          transition: transform 0.5s ease;
+        }
+
+        .polaroid-card:hover .polaroid-photo {
+          transform: scale(1.05);
+        }
+
+        .polaroid-name {
+          font-family: 'Poppins', sans-serif;
+          font-weight: 800;
+          font-size: 1.1rem;
+          color: #0f1117;
+          margin-bottom: 0.35rem;
+          text-transform: uppercase;
+          letter-spacing: 0.02em;
+        }
+
+        .polaroid-dept {
+          font-size: 0.74rem;
+          color: var(--orange);
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          margin-bottom: 0.6rem;
+        }
+
+        .polaroid-achievement {
+          font-size: 0.8rem;
+          color: var(--text-secondary);
+          line-height: 1.5;
+          margin-bottom: 1.25rem;
+          min-height: 50px;
+        }
+
+        /* ── SYNERGIA FOOTER STYLES ── */
+        .site-footer {
+          border-top: 1px solid var(--border-light);
+          padding: 5rem 2rem 3rem;
+          background: var(--bg-2);
+          color: var(--text-secondary);
+          font-size: 0.85rem;
+        }
+
+        .footer-main-grid {
+          display: grid;
+          grid-template-columns: 1.2fr 1fr 1.5fr;
+          gap: 3rem;
+          max-width: 1200px;
+          margin: 0 auto 4rem;
+        }
+
+        .footer-section-title {
+          font-family: var(--font-display);
+          font-weight: 800;
+          font-size: 0.95rem;
+          text-transform: uppercase;
+          letter-spacing: 0.1em;
+          color: var(--text);
+          margin-bottom: 1.5rem;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+        }
+
+        .footer-logo-area {
+          display: flex;
+          flex-direction: column;
+          gap: 1.25rem;
+        }
+
+        .footer-brand {
+          display: flex;
+          align-items: center;
+          gap: 0.6rem;
+          font-weight: 800;
+          font-size: 1.2rem;
+          color: var(--text);
+          font-style: italic;
+        }
+
+        .footer-social-icons {
+          display: flex;
+          gap: 0.8rem;
+          margin-top: 0.5rem;
+        }
+
+        .footer-social-btn {
+          width: 36px;
+          height: 36px;
+          border-radius: 50%;
+          background: var(--surface);
+          border: 1px solid var(--border-light);
+          color: var(--text-secondary);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.2s ease;
+          text-decoration: none;
+        }
+
+        .footer-social-btn:hover {
+          background: var(--orange);
+          color: #fff;
+          border-color: var(--orange);
+          transform: translateY(-2px);
+        }
+
+        .footer-address {
+          line-height: 1.7;
+          color: var(--text-secondary);
+        }
+
+        .footer-link-group {
+          margin-top: 1rem;
+          display: flex;
+          flex-direction: column;
+          gap: 0.6rem;
+        }
+
+        .footer-text-link {
+          color: var(--orange);
+          text-decoration: none;
+          font-weight: 600;
+          display: inline-flex;
+          align-items: center;
+          gap: 0.25rem;
+          transition: color 0.2s ease;
+        }
+
+        .footer-text-link:hover {
+          color: var(--orange-dark);
+          text-decoration: underline;
+        }
+
+        .coordinators-grid {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 1rem;
+        }
+
+        .coordinator-card {
+          background: var(--card);
+          border: 1px solid var(--border-light);
+          border-radius: var(--radius-sm);
+          padding: 0.85rem 1rem;
+          box-shadow: var(--shadow-sm);
+          display: flex;
+          flex-direction: column;
+          gap: 0.2rem;
+          transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .coordinator-card:hover {
+          transform: translateY(-2px);
+          box-shadow: var(--shadow-md);
+        }
+
+        .coordinator-badge {
+          align-self: flex-start;
+          font-size: 0.62rem;
+          font-weight: 800;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          padding: 0.15rem 0.45rem;
+          border-radius: 4px;
+          margin-bottom: 0.2rem;
+        }
+
+        .coordinator-badge.faculty {
+          background: rgba(59, 130, 246, 0.08);
+          color: #2563eb;
+        }
+
+        .coordinator-badge.student {
+          background: rgba(245, 158, 11, 0.08);
+          color: #d97706;
+        }
+
+        .coordinator-name {
+          font-weight: 700;
+          color: var(--text);
+          font-size: 0.84rem;
+        }
+
+        .coordinator-phone {
+          font-size: 0.78rem;
+          color: var(--text-muted);
+          text-decoration: none;
+          transition: color 0.2s;
+        }
+
+        .coordinator-phone:hover {
+          color: var(--orange);
+        }
+
+
+
+        .footer-copyright {
+          text-align: center;
+          font-size: 0.78rem;
+          color: var(--text-muted);
+          border-top: 1px solid var(--border-light);
+          padding-top: 2rem;
+          margin-top: 2rem;
+        }
+
+        @media (max-width: 1024px) {
+          .footer-main-grid {
+            grid-template-columns: 1fr 1fr;
+          }
+          .footer-main-grid > *:last-child {
+            grid-column: span 2;
+          }
+          .credits-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+        }
+
+        @media (max-width: 600px) {
+          .footer-main-grid {
+            grid-template-columns: 1fr;
+            gap: 2rem;
+          }
+          .footer-main-grid > *:last-child {
+            grid-column: span 1;
+          }
+          .coordinators-grid {
+            grid-template-columns: 1fr;
+          }
+          .credits-grid {
+            grid-template-columns: 1fr;
+          }
+        }
       `}</style>
 
       {/* ── HERO SECTION ── */}
@@ -193,6 +568,11 @@ export default function Home() {
         {/* Geometric shards */}
         <div className="shard-tl" />
         <div className="shard-br" />
+
+        {/* Floating 3D Spheres */}
+        <div className="sphere sphere-tr" />
+        <div className="sphere sphere-br" />
+        <div className="sphere sphere-bl" />
 
         {/* 50/50 Split Screen Layout Container */}
         <div ref={heroTextRef} style={{
@@ -308,28 +688,164 @@ export default function Home() {
         </div>
       </div>
 
+      {/* ── WEEKLY WINNERS SECTION ── */}
+      {winners.length > 0 && (
+        <section className="celebration-section">
+          {/* Confetti or decorative particles */}
+          <div style={{ position: 'absolute', top: '10%', left: '5%', opacity: 0.15, fontSize: '2rem' }}>✨</div>
+          <div style={{ position: 'absolute', top: '15%', right: '8%', opacity: 0.15, fontSize: '2.5rem' }}>🎉</div>
+          <div style={{ position: 'absolute', bottom: '15%', left: '10%', opacity: 0.15, fontSize: '2.2rem' }}>🏆</div>
+          <div style={{ position: 'absolute', bottom: '10%', right: '7%', opacity: 0.15, fontSize: '1.8rem' }}>💫</div>
+
+          <div className="celebration-title-wrap">
+            <span className="celebration-badge">
+              <i className="fa-solid fa-trophy" /> Hall of Fame
+            </span>
+            <h2 style={{
+              fontSize: 'clamp(1.8rem, 4vw, 2.8rem)',
+              fontWeight: 900,
+              fontFamily: 'var(--font-display)',
+              color: 'var(--text)',
+              marginBottom: '0.8rem',
+              textTransform: 'uppercase',
+              letterSpacing: '0.01em',
+            }}>
+              Congratulations to All Winners!
+            </h2>
+            <p style={{
+              fontSize: '0.94rem',
+              color: 'var(--text-secondary)',
+              maxWidth: '560px',
+              margin: '0 auto',
+              lineHeight: 1.6,
+            }}>
+              Celebrating the brilliant minds who topped our weekly coding challenges and sprint competitions.
+            </p>
+          </div>
+
+          <div className="polaroid-grid">
+            {winners.map((w) => (
+              <div key={w.id} className="polaroid-card">
+                {/* Decorative Tape on Polaroid */}
+                <div style={{
+                  position: 'absolute',
+                  top: '-10px',
+                  width: '60px',
+                  height: '20px',
+                  background: 'rgba(255, 85, 0, 0.15)',
+                  backdropFilter: 'blur(2px)',
+                  transform: 'rotate(-3deg)',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.03)',
+                  border: '1px dashed rgba(255, 85, 0, 0.2)'
+                }} />
+
+                <div className="polaroid-photo-wrapper">
+                  <img src={w.photo} alt={w.name} className="polaroid-photo" />
+                </div>
+                <h3 className="polaroid-name">{w.name}</h3>
+                <div className="polaroid-dept">@{w.department}</div>
+                <p className="polaroid-achievement">{w.achievement}</p>
+                
+                {w.certificate && (
+                  <button className="btn btn-outline btn-sm" onClick={() => setModal({ active: true, name: w.name, achievement: w.achievement })} style={{ borderRadius: 'var(--radius-sm)', marginTop: 'auto', fontSize: '0.78rem', padding: '0.4rem 0.9rem' }}>
+                    <i className="fa-solid fa-certificate" style={{ marginRight: '0.35rem' }} /> View Certificate
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* ── LIGHTBOX OVERLAY FOR CERTIFICATE ── */}
+      {modal.active && (
+        <div className="lightbox-overlay" onClick={() => setModal({ active: false, name: '', achievement: '' })} style={{ zIndex: 9999 }}>
+          <div onClick={e => e.stopPropagation()} style={{
+            background: '#fff', borderRadius: 'var(--radius-lg)',
+            padding: '2.5rem', maxWidth: 420, width: '90%', textAlign: 'center',
+            boxShadow: 'var(--shadow-xl)',
+            position: 'relative'
+          }}>
+            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🏆</div>
+            <h3 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text)', marginBottom: '0.5rem', fontFamily: 'var(--font-display)' }}>Certificate of Achievement</h3>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '0.25rem' }}>Presented to</p>
+            <p style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--orange)', fontFamily: 'var(--font-display)', marginBottom: '0.75rem' }}>{modal.name}</p>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', lineHeight: 1.5 }}>{modal.achievement}</p>
+            <button className="btn btn-primary" onClick={() => setModal({ active: false, name: '', achievement: '' })} style={{ marginTop: '1.5rem', borderRadius: 'var(--radius-md)' }}>Close</button>
+          </div>
+        </div>
+      )}
+
       {/* ── FOOTER ── */}
-      <footer style={{
-        borderTop: '1px solid var(--border-light)',
-        padding: '3rem 2rem',
-        background: 'var(--bg-2)',
-        color: 'var(--text-secondary)',
-        fontSize: '0.8rem',
-        textAlign: 'center'
-      }}>
-        <div style={{ maxWidth: '1000px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text)', fontWeight: 700 }}>
-            <img src="/logo.png" alt="Logo" style={{ height: '22px' }} />
-            <span>MINDCRAFT AI</span>
+      <footer className="site-footer">
+        <div className="footer-main-grid">
+          {/* Column 1: Logo & About */}
+          <div className="footer-logo-area">
+            <div className="footer-brand">
+              <img src="/logo.png" alt="Logo" style={{ height: '26px' }} />
+              <span>MINDCRAFT AI</span>
+            </div>
+            <p style={{ lineHeight: 1.6, fontSize: '0.85rem' }}>
+              Organized by Department of Computer Science and Engineering at Velalar College of Engineering and Technology. 
+              Dedicated to fostering technical excellence and creative innovation among students nationwide.
+            </p>
+            <div className="footer-social-icons">
+              <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="footer-social-btn" aria-label="Instagram">
+                <i className="fa-brands fa-instagram" />
+              </a>
+              <a href="https://velalarengg.ac.in" target="_blank" rel="noopener noreferrer" className="footer-social-btn" aria-label="Website">
+                <i className="fa-solid fa-globe" />
+              </a>
+            </div>
           </div>
+
+          {/* Column 2: Location */}
+          <div>
+            <h4 className="footer-section-title">
+              <i className="fa-solid fa-location-dot" style={{ color: 'var(--orange)' }} /> Location
+            </h4>
+            <div className="footer-address">
+              <p style={{ fontWeight: 700, color: 'var(--text)', marginBottom: '0.25rem' }}>Velalar College of Engineering and Technology</p>
+              <p>Thindal, Erode - 638 012</p>
+              <p>Tamil Nadu, India</p>
+            </div>
+            <div className="footer-link-group">
+              <a href="https://maps.google.com/?q=Velalar+College+of+Engineering+and+Technology" target="_blank" rel="noopener noreferrer" className="footer-text-link">
+                Get Directions <i className="fa-solid fa-arrow-up-right-from-square" style={{ fontSize: '0.7rem' }} />
+              </a>
+              <div style={{ marginTop: '0.5rem' }}>
+                <span style={{ display: 'block', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', marginBottom: '0.15rem' }}>Official Portal</span>
+                <a href="https://www.velalarengg.ac.in/" target="_blank" rel="noopener noreferrer" className="footer-text-link" style={{ fontSize: '0.85rem' }}>
+                  www.velalarengg.ac.in/
+                </a>
+              </div>
+            </div>
+          </div>
+
+          {/* Column 3: Coordinators */}
+          <div>
+            <h4 className="footer-section-title">
+              <i className="fa-solid fa-user-gear" style={{ color: 'var(--orange)' }} /> Coordinators
+            </h4>
+            <div className="coordinators-grid" style={{ gridTemplateColumns: '1fr' }}>
+              <div className="coordinator-card">
+                <span className="coordinator-badge faculty" style={{ background: 'rgba(255, 85, 0, 0.08)', color: 'var(--orange)' }}>Faculty Mentor</span>
+                <span className="coordinator-name">Ms. R. VIDHYA</span>
+                <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Assistant Professor</span>
+                <span style={{ fontSize: '0.74rem', color: 'var(--text-secondary)' }}>Club MindCraft AI</span>
+              </div>
+              <div className="coordinator-card">
+                <span className="coordinator-badge faculty" style={{ background: 'rgba(255, 85, 0, 0.08)', color: 'var(--orange)' }}>Faculty Advisor</span>
+                <span className="coordinator-name">Mr. V. DINESH KUMAR</span>
+                <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Assistant Professor</span>
+                <span style={{ fontSize: '0.74rem', color: 'var(--text-secondary)' }}>Club MindCraft AI</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="footer-copyright">
           <p style={{ margin: 0 }}>© 2026 Mindcraft AI Club. Developed by CSE Department.</p>
-          <div style={{ display: 'flex', gap: '1.5rem', marginTop: '0.5rem' }}>
-            <Link to="/" style={{ color: 'inherit', textDecoration: 'none' }}>Home</Link>
-            <Link to="/members" style={{ color: 'inherit', textDecoration: 'none' }}>Members</Link>
-            <Link to="/projects" style={{ color: 'inherit', textDecoration: 'none' }}>Projects</Link>
-            <Link to="/gallery" style={{ color: 'inherit', textDecoration: 'none' }}>Gallery</Link>
-            <Link to="/events" style={{ color: 'inherit', textDecoration: 'none' }}>Events</Link>
-          </div>
         </div>
       </footer>
     </div>

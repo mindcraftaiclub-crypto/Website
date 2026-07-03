@@ -7,6 +7,7 @@ const TABS = [
   { id: 'events',       label: 'Events',        icon: 'fa-calendar' },
   { id: 'stats',        label: 'Stats Config',  icon: 'fa-chart-simple' },
   { id: 'requests',     label: 'Applications',  icon: 'fa-file-signature' },
+  { id: 'winners',      label: 'Winners',       icon: 'fa-trophy' },
 ];
 
 /* ── helpers ── */
@@ -624,6 +625,198 @@ function RequestsTab() {
   );
 }
 
+/* ═══════════════════════════════════ WINNERS TAB ═══════════════════════════════════ */
+function WinnersTab() {
+  const [winners, setWinners] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState('');
+  const [editingId, setEditingId] = useState(null);
+  const [form, setForm] = useState({ name: '', department: '', achievement: '', certificate: '' });
+  const fileRef = useRef();
+
+  const load = async () => {
+    try { setWinners(await db.find('WeeklyWinners')); }
+    catch { window.showToast('Error', 'Could not load weekly winners.', 'error'); }
+    finally { setLoading(false); }
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const handleImageChange = e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+  };
+
+  const handleStartEdit = w => {
+    setEditingId(w.id);
+    setForm({
+      name: w.name || '',
+      department: w.department || '',
+      achievement: w.achievement || '',
+      certificate: w.certificate || ''
+    });
+    setImagePreview(w.photo || '');
+    setImageFile(null);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setForm({ name: '', department: '', achievement: '', certificate: '' });
+    setImagePreview('');
+    setImageFile(null);
+    if (fileRef.current) fileRef.current.value = '';
+  };
+
+  const handleAddOrEdit = async () => {
+    if (!form.name || !form.achievement || !form.department) {
+      window.showToast('Missing Fields', 'Name, Department and Achievement are required.', 'error');
+      return;
+    }
+    setUploading(true);
+    try {
+      let photoUrl = imagePreview;
+
+      if (imageFile) {
+        // Upload image to Supabase
+        const ext = imageFile.name.split('.').pop();
+        const path = `winners/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+        const { error: uploadError } = await supabaseServiceClient.storage.from('member_photos').upload(path, imageFile, { upsert: true });
+        if (uploadError) throw new Error(uploadError.message);
+        const { data: { publicUrl } } = supabaseServiceClient.storage.from('member_photos').getPublicUrl(path);
+        photoUrl = publicUrl;
+      } else if (!photoUrl && !editingId) {
+        photoUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(form.name)}&background=ff5500&color=fff&size=150`;
+      }
+
+      if (editingId) {
+        await db.update('WeeklyWinners', editingId, { ...form, photo: photoUrl });
+        window.showToast('Updated!', `${form.name} updated successfully.`, 'success');
+      } else {
+        await db.insert('WeeklyWinners', { ...form, photo: photoUrl, createdAt: new Date().toISOString() });
+        window.showToast('Added!', `${form.name} added as a Weekly Winner.`, 'success');
+      }
+      handleCancelEdit();
+      load();
+    } catch (err) {
+      window.showToast('Operation Failed', err.message, 'error');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDelete = async (id, name) => {
+    if (!window.confirm(`Delete ${name} from Weekly Winners?`)) return;
+    try {
+      await db.delete('WeeklyWinners', id);
+      window.showToast('Deleted', `${name} removed.`, 'success');
+      setWinners(prev => prev.filter(w => w.id !== id));
+    } catch (err) {
+      window.showToast('Error', err.message, 'error');
+    }
+  };
+
+  return (
+    <div className="admin-grid-layout">
+      {/* ADD/EDIT FORM */}
+      <div>
+        <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14, padding: '1.5rem' }}>
+          <h3 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '1.25rem', color: 'var(--text)' }}>
+            <i className={editingId ? "fa-solid fa-user-pen" : "fa-solid fa-user-plus"} style={{ color: 'var(--orange)', marginRight: '0.5rem' }} />
+            {editingId ? 'Edit Winner' : 'Add Weekly Winner'}
+          </h3>
+
+          {/* Photo Upload */}
+          <div style={{ textAlign: 'center', marginBottom: '1.25rem' }}>
+            <div onClick={() => fileRef.current?.click()} style={{ width: 90, height: 90, borderRadius: '50%', margin: '0 auto 0.75rem', background: 'var(--surface)', border: `2px dashed ${imagePreview ? 'var(--orange)' : 'var(--border)'}`, overflow: 'hidden', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'border-color 0.25s' }}>
+              {imagePreview ? <img src={imagePreview} alt="preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <i className="fa-solid fa-camera" style={{ color: 'var(--text-muted)', fontSize: '1.4rem' }} />}
+            </div>
+            <button className="btn btn-outline btn-sm" onClick={() => fileRef.current?.click()}>
+              <i className="fa-solid fa-upload" /> {imageFile ? 'Change Photo' : 'Upload Photo'}
+            </button>
+            <input ref={fileRef} type="file" accept="image/*" onChange={handleImageChange} style={{ display: 'none' }} />
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>Winner Name</label>
+              <input className="form-input" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="e.g. John Doe" style={{ width: '100%' }} />
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>Department</label>
+              <input className="form-input" value={form.department} onChange={e => setForm(p => ({ ...p, department: e.target.value }))} placeholder="e.g. Computer Science" style={{ width: '100%' }} />
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>Achievement Details</label>
+              <textarea className="form-input" value={form.achievement} onChange={e => setForm(p => ({ ...p, achievement: e.target.value }))} placeholder="e.g. Winner of Weekly JS Quiz (Task #1)" style={{ width: '100%', minHeight: 60, fontFamily: 'inherit' }} />
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.35rem' }}>Certificate Link (Optional)</label>
+              <input className="form-input" value={form.certificate} onChange={e => setForm(p => ({ ...p, certificate: e.target.value }))} placeholder="e.g. https://example.com/cert" style={{ width: '100%' }} />
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+              <button className="btn btn-primary" onClick={handleAddOrEdit} disabled={uploading} style={{ flex: 1 }}>
+                {uploading ? 'Processing...' : editingId ? 'Save Changes' : 'Add Winner'}
+              </button>
+              {editingId && (
+                <button className="btn btn-outline" onClick={handleCancelEdit} style={{ flex: 0.5 }}>
+                  Cancel
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* LIST OF WINNERS */}
+      <div>
+        <div style={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden' }}>
+          <div style={{ padding: '0.9rem 1.2rem', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--text)' }}>Quiz & Challenge Winners</span>
+            <Badge color="green">{winners.length} winners</Badge>
+          </div>
+          
+          {loading ? (
+            <div className="loading-spinner" />
+          ) : (
+            <div style={{ padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: 600, overflowY: 'auto' }}>
+              {winners.length === 0 ? (
+                <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>No winners added yet.</div>
+              ) : winners.map(w => (
+                <div key={w.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem', border: '1px solid var(--border-light)', borderRadius: 10, gap: '1rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <img src={w.photo} alt={w.name} style={{ width: 42, height: 42, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--border-light)' }} />
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: '0.86rem', color: 'var(--text)' }}>{w.name}</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{w.department}</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontStyle: 'italic', marginTop: '2px' }}>{w.achievement}</div>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.4rem', flexShrink: 0 }}>
+                    <button onClick={() => handleStartEdit(w)} style={{ background: 'var(--surface)', border: 'none', borderRadius: 6, padding: '4px 8px', color: 'var(--text-secondary)', fontSize: '0.74rem', fontWeight: 600, cursor: 'pointer' }}>
+                      Edit
+                    </button>
+                    <button onClick={() => handleDelete(w.id, w.name)} style={{ background: '#fee2e2', border: 'none', borderRadius: 6, padding: '4px 8px', color: '#dc2626', fontSize: '0.74rem', fontWeight: 600, cursor: 'pointer' }}>
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ═══════════════════════════════════ MAIN ADMIN PAGE ═══════════════════════════════════ */
 export default function Admin({ user }) {
   const [tab, setTab] = useState('members');
@@ -715,6 +908,7 @@ export default function Admin({ user }) {
       {tab === 'events'        && <EventsTab />}
       {tab === 'stats'         && <StatsTab />}
       {tab === 'requests'      && <RequestsTab />}
+      {tab === 'winners'       && <WinnersTab />}
     </div>
   );
 }

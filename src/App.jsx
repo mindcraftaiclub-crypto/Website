@@ -89,7 +89,7 @@ export default function App() {
 
       <Header user={user} />
 
-      <div className="main-content">
+      <div className={`main-content ${location.pathname === '/' ? 'home-main-content' : ''}`}>
         {authLoading ? (
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
             <div className="loading-spinner"></div>
