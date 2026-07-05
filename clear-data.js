@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, getDocs, deleteDoc, doc } from 'firebase/firestore';
+import { getFirestore, collection, getDocs, deleteDoc, doc, setDoc } from 'firebase/firestore';
 import { getAuth, signInWithEmailAndPassword } from 'firebase/auth';
 
 // Setup file paths for ES Module environment
@@ -68,13 +68,30 @@ const COLLECTIONS_TO_CLEAR = [
 async function clearCollections() {
   console.log('\n--- START DATABASE CLEANUP ---');
   
+  let adminUid = null;
   try {
     const auth = getAuth(app);
     console.log('Authenticating as Admin (mindcraftaiclub@gmail.com)...');
-    await signInWithEmailAndPassword(auth, 'mindcraftaiclub@gmail.com', 'Mind2025@');
-    console.log('Authentication Successful!');
+    const userCredential = await signInWithEmailAndPassword(auth, 'mindcraftaiclub@gmail.com', 'Mind2025@');
+    adminUid = userCredential.user.uid;
+    console.log('Authentication Successful! UID:', adminUid);
+
+    // Assert admin profile document exists in Firestore to ensure permission
+    console.log('Asserting Admin profile in Users collection...');
+    await setDoc(doc(db, 'Users', adminUid), {
+      id: adminUid,
+      name: 'Admin',
+      email: userCredential.user.email,
+      role: 'admin',
+      department: 'Computer Science',
+      year: '1',
+      position: 'Member',
+      skills: [],
+      verified: true
+    });
+    console.log('Admin profile successfully asserted.');
   } catch (authError) {
-    console.error('Authentication Failed:', authError.message);
+    console.error('Authentication/Assertion Failed:', authError.message);
     console.error('Continuing without authentication (this may fail if security rules block it)...');
   }
   
@@ -91,6 +108,10 @@ async function clearCollections() {
 
       let deletedCount = 0;
       for (const document of snapshot.docs) {
+        if (colName === 'Users' && document.id === adminUid) {
+          console.log(`  Skipping Admin profile document: ${document.id}`);
+          continue;
+        }
         await deleteDoc(doc(db, colName, document.id));
         deletedCount++;
       }
